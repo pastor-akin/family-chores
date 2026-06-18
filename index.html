@@ -255,10 +255,15 @@ const db = {
     onConflict: 'week_monday,chore_id'
   }),
   getStarTotals: async () => {
-    const [c, a] = await Promise.all([sb.from('completions').select('child_id, chores(stars_value)'), sb.from('star_adjustments').select('child_id, amount')]);
+    const [c, a, e] = await Promise.all([
+      sb.from('completions').select('child_id, chores(stars_value)'),
+      sb.from('star_adjustments').select('child_id, amount'),
+      sb.from('extra_requests').select('child_id, requested_stars').eq('status', 'approved')
+    ]);
     const totals = {};
     for (const r of c.data ?? []) totals[r.child_id] = (totals[r.child_id] ?? 0) + (r.chores?.stars_value ?? 1);
     for (const r of a.data ?? []) totals[r.child_id] = (totals[r.child_id] ?? 0) + r.amount;
+    for (const r of e.data ?? []) totals[r.child_id] = (totals[r.child_id] ?? 0) + r.requested_stars;
     return totals;
   },
   getStarAdjustments: async childId => (await sb.from('star_adjustments').select('*').eq('child_id', childId).order('created_at', {
@@ -1463,10 +1468,6 @@ function RequestsTab({
   const childName = id => children.find(c => c.id === id)?.name ?? 'Unknown';
   const handle = async (id, status) => {
     await db.updateExtraRequest(id, status);
-    if (status === 'approved') {
-      const req = requests.find(r => r.id === id);
-      if (req) await db.addStarAdjustment(req.child_id, req.requested_stars, `Approved: ${req.name}`);
-    }
     onRefresh();
   };
   return /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
