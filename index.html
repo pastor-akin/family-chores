@@ -1,0 +1,2159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Family Chores">
+<meta name="theme-color" content="#6366f1">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;700;800;900&display=swap" rel="stylesheet">
+<title>Family Chores ⭐</title>
+<script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+:root{
+  --indigo:#6366f1;--purple:#c084fc;--pink:#f472b6;
+  --safe-top:env(safe-area-inset-top,0px);
+  --safe-bottom:env(safe-area-inset-bottom,0px);
+}
+html,body{height:100%;background:#f8f7ff;font-family:'Nunito',sans-serif;overflow:hidden}
+#root{height:100%;display:flex;flex-direction:column}
+
+/* Screens */
+.screen{position:fixed;inset:0;display:flex;flex-direction:column;overflow:hidden;background:#f8f7ff;transition:transform .3s ease,opacity .3s ease}
+.screen.hidden{transform:translateX(110%);pointer-events:none}
+
+/* Gradient */
+.gradient{background:linear-gradient(160deg,#667eea,#c084fc,#f472b6);min-height:100%}
+
+/* Scrollable body */
+.scroll-body{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:16px;padding-bottom:calc(var(--safe-bottom) + 32px)}
+
+/* Cards */
+.card{background:#fff;border-radius:20px;padding:16px;margin-bottom:12px;box-shadow:0 2px 8px rgba(0,0,0,.06)}
+
+/* Buttons */
+.btn{display:flex;align-items:center;justify-content:center;border:none;border-radius:14px;padding:14px;font-family:'Nunito',sans-serif;font-weight:800;font-size:16px;cursor:pointer;width:100%}
+.btn-primary{background:var(--indigo);color:#fff}
+.btn-danger{background:#ef4444;color:#fff}
+.btn-success{background:#10b981;color:#fff}
+.btn-ghost{background:rgba(255,255,255,.2);color:#fff;border:2px solid rgba(255,255,255,.4)}
+
+/* Input */
+.input{width:100%;border:2px solid #e5e7eb;border-radius:12px;padding:12px;font-family:'Nunito',sans-serif;font-size:15px;color:#111;background:#fff;outline:none}
+.input:focus{border-color:var(--indigo)}
+
+/* Label */
+.label{font-weight:700;font-size:14px;color:#374151;margin-bottom:6px;margin-top:12px;display:block}
+
+/* Header bar */
+.header{background:#fff;border-bottom:1px solid #e5e7eb;padding:14px 16px;display:flex;align-items:center;gap:12px;padding-top:calc(var(--safe-top) + 14px)}
+.header-title{font-weight:900;font-size:20px;color:#1f2937;flex:1}
+.back-btn{background:none;border:none;font-family:'Nunito',sans-serif;font-weight:700;font-size:15px;color:var(--indigo);cursor:pointer;padding:4px}
+
+/* Tab bar */
+.tab-bar{background:#fff;border-bottom:1px solid #e5e7eb;display:flex;overflow-x:auto;gap:8px;padding:8px 12px;scrollbar-width:none}
+.tab-bar::-webkit-scrollbar{display:none}
+.tab{border:none;border-radius:20px;padding:6px 16px;font-family:'Nunito',sans-serif;font-weight:700;font-size:14px;cursor:pointer;white-space:nowrap;background:#f3f4f6;color:#374151}
+.tab.active{background:var(--indigo);color:#fff}
+
+/* List items */
+.list-item{display:flex;align-items:center;gap:12px;background:#fff;border-radius:14px;padding:14px;margin-bottom:10px}
+.list-emoji{font-size:28px}
+.list-name{font-weight:800;font-size:16px;color:#1f2937}
+.list-sub{font-weight:400;font-size:13px;color:#6b7280;margin-top:2px}
+.remove-btn{background:none;border:none;font-size:16px;color:#ef4444;cursor:pointer;padding:8px;font-weight:700}
+
+/* Chips */
+.chip{display:inline-flex;align-items:center;padding:8px 12px;border-radius:12px;background:#eef2ff;border:1px solid #c7d2fe;font-family:'Nunito',sans-serif;font-weight:700;font-size:13px;color:#4338ca;cursor:pointer;margin:0 4px 6px 0}
+.chip.active{background:#c7d2fe}
+
+/* Assign pills */
+.pill{border:2px solid #e5e7eb;border-radius:20px;padding:6px 12px;font-family:'Nunito',sans-serif;font-weight:700;font-size:13px;color:#374151;cursor:pointer;background:#f9fafb;white-space:nowrap}
+.pill.active{border-color:var(--indigo);background:#eef2ff;color:var(--indigo)}
+
+/* Section title */
+.section-title{font-weight:900;font-size:18px;color:#1f2937;margin:16px 0 10px}
+
+/* Empty */
+.empty-text{font-weight:700;font-size:15px;color:#9ca3af;text-align:center;padding:24px}
+
+/* Spinner */
+.spinner{display:flex;align-items:center;justify-content:center;height:100%;font-size:32px;animation:spin 1s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* Modal overlay */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.5);display:flex;align-items:flex-end;z-index:100}
+.modal-card{background:#fff;border-radius:28px 28px 0 0;padding:24px;padding-bottom:calc(var(--safe-bottom)+24px);width:100%;max-height:90vh;overflow-y:auto}
+
+/* Star bars */
+.star-bar{height:10px;background:#e5e7eb;border-radius:5px;overflow:hidden;margin-top:6px}
+.star-bar-fill{height:100%;border-radius:5px}
+
+/* Chore row */
+.chore-row{border-radius:16px;margin-bottom:12px;overflow:hidden}
+.chore-main{display:flex;align-items:center;padding:14px;cursor:pointer;gap:14px}
+.chore-icon{width:48px;height:48px;border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:26px;flex-shrink:0}
+.chore-name{font-weight:800;font-size:16px;color:#1f2937}
+.chore-name.done{text-decoration:line-through;color:#9ca3af}
+.chore-stars{font-weight:700;font-size:13px;color:#6b7280;margin-top:2px}
+.checkbox{width:32px;height:32px;border-radius:10px;border:2.5px solid #d1d5db;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-left:auto}
+.checkbox.checked{background:var(--check-color,#10b981);border-color:var(--check-color,#10b981);color:#fff;font-size:18px;font-weight:900}
+
+/* Progress bar */
+.progress-bar{height:12px;background:#e5e7eb;border-radius:6px;overflow:hidden;margin:6px 0 16px}
+.progress-fill{height:100%;border-radius:6px;transition:width .3s}
+
+/* Child card grid */
+.card-grid{display:flex;flex-wrap:wrap;gap:16px;justify-content:center;margin-bottom:24px}
+.child-card{width:155px;border-radius:24px;padding:20px;display:flex;flex-direction:column;align-items:center;cursor:pointer;box-shadow:0 6px 0 var(--shadow-color);transition:transform .1s,box-shadow .1s;border:none;font-family:'Nunito',sans-serif;position:relative}
+.child-card:active{transform:translateY(4px);box-shadow:0 2px 0 var(--shadow-color)}
+.child-card-emoji{font-size:52px;margin-bottom:6px}
+.child-card-name{font-weight:900;font-size:20px;color:#fff;text-align:center}
+.child-card-age{font-weight:700;font-size:13px;color:rgba(255,255,255,.8);margin-top:2px}
+.child-card-stars{font-weight:800;font-size:15px;color:#fff;margin-top:10px}
+.child-card-progress{font-weight:700;font-size:13px;color:rgba(255,255,255,.85)}
+.all-done-badge{position:absolute;top:-8px;background:#fff;border-radius:12px;padding:2px 8px;font-weight:800;font-size:11px;color:#7c3aed}
+
+/* Reward cards */
+.reward-card{background:#fff;border-radius:16px;padding:14px;display:flex;flex-direction:column;align-items:center;border:2px solid #e5e7eb;cursor:pointer;min-width:110px}
+.reward-card.disabled{opacity:.4;pointer-events:none}
+
+/* Mode buttons */
+.mode-btn{flex:1;border:2px solid #e5e7eb;border-radius:12px;padding:12px;font-family:'Nunito',sans-serif;font-weight:800;font-size:15px;cursor:pointer;background:#fff;color:#374151}
+.mode-btn.deduct{background:#ef4444;border-color:#ef4444;color:#fff}
+.mode-btn.bonus{background:#10b981;border-color:#10b981;color:#fff}
+
+/* Request card */
+.request-card{background:#fff;border-radius:14px;padding:14px;margin-bottom:10px;border-left:4px solid #f59e0b}
+.request-card.approved{border-left-color:#10b981}
+.request-card.rejected{border-left-color:#ef4444}
+
+/* Adj row */
+.adj-row{display:flex;align-items:center;background:#fff;border-radius:12px;padding:14px;margin-bottom:8px;border-left:4px solid #e5e7eb;gap:12px}
+
+/* Stars row */
+.stars-row{display:flex;gap:8px;margin-bottom:12px}
+.star-btn{flex:1;border:2px solid #e5e7eb;border-radius:10px;padding:8px;font-family:'Nunito',sans-serif;font-weight:700;font-size:13px;cursor:pointer;background:#fff}
+.star-btn.active{border-color:var(--indigo);background:#eef2ff}
+
+/* Week nav */
+.week-nav{display:flex;align-items:center;justify-content:space-between;background:#fff;border-radius:16px;padding:16px;margin-bottom:16px}
+.week-nav-btn{background:none;border:none;font-size:20px;color:var(--indigo);cursor:pointer;font-weight:800;padding:8px}
+</style>
+</head>
+<body>
+<div id="root"></div>
+<div id="err" style="display:none;position:fixed;inset:0;background:#fff;z-index:9999;padding:24px;font-family:monospace;font-size:13px;overflow:auto;white-space:pre-wrap;color:#c00"></div>
+<script>
+window.onerror = function(msg, src, line, col, err) {
+  var d = document.getElementById('err');
+  d.style.display = 'block';
+  d.textContent = 'JS Error:\n' + msg + '\n\nFile: ' + src + '\nLine: ' + line + '\n\n' + (err && err.stack ? err.stack : '');
+};
+window.onunhandledrejection = function(e) {
+  var d = document.getElementById('err');
+  d.style.display = 'block';
+  d.textContent = (d.textContent || '') + '\n\nPromise Error:\n' + (e.reason && e.reason.stack ? e.reason.stack : String(e.reason));
+};
+// Check CDN scripts loaded
+window.addEventListener('DOMContentLoaded', function() {
+  var missing = [];
+  if (!window.React) missing.push('React');
+  if (!window.ReactDOM) missing.push('ReactDOM');
+  if (!window.supabase) missing.push('Supabase');
+  if (missing.length) {
+    var d = document.getElementById('err');
+    d.style.display = 'block';
+    d.textContent = 'Missing CDN scripts: ' + missing.join(', ') + '\n\nCheck your internet connection.';
+  }
+});
+</script>
+<script>
+const {
+  useState,
+  useEffect,
+  useCallback,
+  useRef
+} = React;
+
+// ─── Supabase ────────────────────────────────────────────────────────────────
+const SUPABASE_URL = 'https://suxrgdlxvmsycecvbgaf.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InN1eHJnZGx4dm1zeWNlY3ZiZ2FmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODEzNzY2NTAsImV4cCI6MjA5Njk1MjY1MH0.IEo-hkf8DH_bgwMVie-XJI2DDWIkJUIsYiyTdM1eBGU';
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+// ─── Helpers ─────────────────────────────────────────────────────────────────
+function getToday() {
+  return new Date().toISOString().split('T')[0];
+}
+function getWeekMonday(offsetWeeks = 0) {
+  const d = new Date();
+  const day = d.getDay();
+  const diff = (day === 0 ? -6 : 1 - day) + offsetWeeks * 7;
+  d.setDate(d.getDate() + diff);
+  return d.toISOString().split('T')[0];
+}
+function addDays(dateStr, n) {
+  const d = new Date(dateStr + 'T12:00:00');
+  d.setDate(d.getDate() + n);
+  return d.toISOString().split('T')[0];
+}
+function fmtDate(d) {
+  return new Date(d + 'T12:00:00').toLocaleDateString('en-US', {
+    month: 'short',
+    day: 'numeric'
+  });
+}
+function getEffectiveAssignment(chore, weekMonday, schedules) {
+  const ov = schedules.find(s => s.week_monday === weekMonday && s.chore_id === chore.id);
+  return ov !== undefined ? ov.child_id : chore.assigned_to;
+}
+const DAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+
+// ─── DB helpers ──────────────────────────────────────────────────────────────
+const db = {
+  getChildren: async () => (await sb.from('children').select('*').order('sort_order').order('created_at')).data ?? [],
+  addChild: async c => (await sb.from('children').insert(c).select().single()).data,
+  deleteChild: async id => sb.from('children').delete().eq('id', id),
+  getChores: async () => (await sb.from('chores').select('*').order('sort_order').order('created_at')).data ?? [],
+  addChore: async c => (await sb.from('chores').insert(c).select().single()).data,
+  deleteChore: async id => sb.from('chores').delete().eq('id', id),
+  getCompletions: async date => (await sb.from('completions').select('*').eq('completed_date', date)).data ?? [],
+  markComplete: async (choreId, childId, date) => sb.from('completions').upsert({
+    chore_id: choreId,
+    child_id: childId,
+    completed_date: date
+  }, {
+    onConflict: 'chore_id,completed_date'
+  }),
+  unmarkComplete: async (choreId, date) => sb.from('completions').delete().eq('chore_id', choreId).eq('completed_date', date),
+  getExtraRequests: async () => (await sb.from('extra_requests').select('*').order('created_at', {
+    ascending: false
+  })).data ?? [],
+  addExtraRequest: async r => sb.from('extra_requests').insert(r),
+  updateExtraRequest: async (id, status) => sb.from('extra_requests').update({
+    status
+  }).eq('id', id),
+  getWeeklySchedules: async monday => (await sb.from('weekly_schedules').select('*').eq('week_monday', monday)).data ?? [],
+  setWeeklySchedule: async (monday, choreId, childId) => sb.from('weekly_schedules').upsert({
+    week_monday: monday,
+    chore_id: choreId,
+    child_id: childId
+  }, {
+    onConflict: 'week_monday,chore_id'
+  }),
+  getStarTotals: async () => {
+    const [c, a] = await Promise.all([sb.from('completions').select('child_id, chores(stars_value)'), sb.from('star_adjustments').select('child_id, amount')]);
+    const totals = {};
+    for (const r of c.data ?? []) totals[r.child_id] = (totals[r.child_id] ?? 0) + (r.chores?.stars_value ?? 1);
+    for (const r of a.data ?? []) totals[r.child_id] = (totals[r.child_id] ?? 0) + r.amount;
+    return totals;
+  },
+  getStarAdjustments: async childId => (await sb.from('star_adjustments').select('*').eq('child_id', childId).order('created_at', {
+    ascending: false
+  })).data ?? [],
+  addStarAdjustment: async (childId, amount, reason) => {
+    const {
+      error
+    } = await sb.from('star_adjustments').insert({
+      child_id: childId,
+      amount,
+      reason
+    });
+    if (error) {
+      console.error('addStarAdjustment error:', error);
+      throw error;
+    }
+  },
+  deleteStarAdjustment: async id => sb.from('star_adjustments').delete().eq('id', id),
+  getSetting: async key => {
+    const {
+      data
+    } = await sb.from('settings').select('value').eq('key', key).single();
+    return data?.value ?? null;
+  },
+  setSetting: async (key, value) => sb.from('settings').upsert({
+    key,
+    value
+  }, {
+    onConflict: 'key'
+  }),
+  copyWeekToNext: async (fromMonday, toMonday, chores) => {
+    const from = (await sb.from('weekly_schedules').select('*').eq('week_monday', fromMonday)).data ?? [];
+    const rows = chores.map(ch => {
+      const ov = from.find(s => s.chore_id === ch.id);
+      return {
+        week_monday: toMonday,
+        chore_id: ch.id,
+        child_id: ov !== undefined ? ov.child_id : ch.assigned_to
+      };
+    });
+    return sb.from('weekly_schedules').upsert(rows, {
+      onConflict: 'week_monday,chore_id'
+    });
+  }
+};
+
+// ─── Constants ───────────────────────────────────────────────────────────────
+const CARD_COLORS = [{
+  bg: '#6b7eaa',
+  shadow: '#4a5a8a'
+}, {
+  bg: '#4da6a0',
+  shadow: '#2d7e79'
+}, {
+  bg: '#7a9e7e',
+  shadow: '#567a5a'
+}, {
+  bg: '#b07d5a',
+  shadow: '#8a5c3a'
+}, {
+  bg: '#9b7aa0',
+  shadow: '#7a5a80'
+}, {
+  bg: '#a89b6e',
+  shadow: '#87794d'
+}];
+const ROW_COLORS = [{
+  bg: '#e8ecf4',
+  icon: '#b0bdd6',
+  check: '#6b7eaa'
+}, {
+  bg: '#e0f2f1',
+  icon: '#99d3cf',
+  check: '#4da6a0'
+}, {
+  bg: '#e8f2e9',
+  icon: '#b5d4b7',
+  check: '#7a9e7e'
+}, {
+  bg: '#f3ebe5',
+  icon: '#d4b49c',
+  check: '#b07d5a'
+}, {
+  bg: '#f0eaf2',
+  icon: '#c9b4cc',
+  check: '#9b7aa0'
+}, {
+  bg: '#f0ece0',
+  icon: '#cec49e',
+  check: '#a89b6e'
+}];
+const CHILD_EMOJIS = ['😊', '😎', '🤩', '😄', '🥳', '😁', '🤗', '🦁', '🐯', '🦊', '🐻', '🐼', '🦋', '⭐', '🌟', '🚀'];
+const CHORE_EMOJIS = ['✅', '⭐', '🧹', '🫧', '🍽️', '🛏️', '👕', '🗑️', '🐶', '🌱', '📚', '🍳', '🧽', '🧸', '👟', '🚗'];
+const DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+const STAR_REWARDS = [{
+  name: 'Play Wii',
+  emoji: '🎮',
+  cost: 15
+}, {
+  name: 'Get Ice Cream',
+  emoji: '🍦',
+  cost: 50
+}];
+const BONUS_REASONS = ['Went to bed on time', 'Great attitude', 'Helped without being asked', 'Did homework without reminding', 'Being kind to siblings'];
+const DEDUCTION_REASONS = ['Not paying attention', 'Not going to bed', 'Bad attitude', 'Fighting with siblings', 'Not following instructions'];
+const CHORE_LIBRARY = [{
+  name: 'Put toys away',
+  emoji: '🧸',
+  starsValue: 1,
+  minAge: 3
+}, {
+  name: 'Make my bed',
+  emoji: '🛏️',
+  starsValue: 1,
+  minAge: 3
+}, {
+  name: 'Put dirty clothes in hamper',
+  emoji: '👕',
+  starsValue: 1,
+  minAge: 3
+}, {
+  name: 'Help set the table',
+  emoji: '🍽️',
+  starsValue: 1,
+  minAge: 3
+}, {
+  name: 'Wipe down the table',
+  emoji: '🧹',
+  starsValue: 1,
+  minAge: 3
+}, {
+  name: 'Feed the pet',
+  emoji: '🐶',
+  starsValue: 2,
+  minAge: 4
+}, {
+  name: 'Put shoes away',
+  emoji: '👟',
+  starsValue: 1,
+  minAge: 3
+}, {
+  name: 'Help carry groceries',
+  emoji: '🛒',
+  starsValue: 1,
+  minAge: 4
+}, {
+  name: 'Do the dishes',
+  emoji: '🫧',
+  starsValue: 2,
+  minAge: 7
+}, {
+  name: 'Vacuum the living room',
+  emoji: '🧹',
+  starsValue: 2,
+  minAge: 7
+}, {
+  name: 'Empty the dishwasher',
+  emoji: '🫧',
+  starsValue: 2,
+  minAge: 7
+}, {
+  name: 'Take out the trash',
+  emoji: '🗑️',
+  starsValue: 2,
+  minAge: 7
+}, {
+  name: 'Sweep the floor',
+  emoji: '🧹',
+  starsValue: 2,
+  minAge: 7
+}, {
+  name: 'Fold laundry',
+  emoji: '👕',
+  starsValue: 2,
+  minAge: 7
+}, {
+  name: 'Water the plants',
+  emoji: '🌱',
+  starsValue: 1,
+  minAge: 6
+}, {
+  name: 'Clean the bathroom sink',
+  emoji: '🚿',
+  starsValue: 2,
+  minAge: 7
+}, {
+  name: 'Wipe counters',
+  emoji: '🧽',
+  starsValue: 2,
+  minAge: 7
+}, {
+  name: 'Weed the garden',
+  emoji: '🌿',
+  starsValue: 2,
+  minAge: 8
+}, {
+  name: 'Mop the floor',
+  emoji: '🧹',
+  starsValue: 3,
+  minAge: 9
+}, {
+  name: 'Clean the bathroom',
+  emoji: '🚿',
+  starsValue: 3,
+  minAge: 9
+}, {
+  name: 'Do laundry',
+  emoji: '👕',
+  starsValue: 3,
+  minAge: 9
+}, {
+  name: 'Cook a simple meal',
+  emoji: '🍳',
+  starsValue: 4,
+  minAge: 10
+}, {
+  name: 'Wash the car',
+  emoji: '🚗',
+  starsValue: 3,
+  minAge: 9
+}, {
+  name: 'Mow the lawn',
+  emoji: '🌿',
+  starsValue: 4,
+  minAge: 12
+}, {
+  name: 'Clean the kitchen',
+  emoji: '🍽️',
+  starsValue: 3,
+  minAge: 9
+}, {
+  name: 'Organize a closet',
+  emoji: '📦',
+  starsValue: 3,
+  minAge: 9
+}];
+const MEAL_CHORES = {
+  breakfast: [{
+    name: 'Clean up after breakfast',
+    emoji: '🍳',
+    starsValue: 2
+  }, {
+    name: 'Do dishes after breakfast',
+    emoji: '🫧',
+    starsValue: 3
+  }],
+  lunch: [{
+    name: 'Clean up after lunch',
+    emoji: '🥪',
+    starsValue: 2
+  }, {
+    name: 'Do dishes after lunch',
+    emoji: '🫧',
+    starsValue: 3
+  }],
+  dinner: [{
+    name: 'Clean up after dinner',
+    emoji: '🍽️',
+    starsValue: 2
+  }, {
+    name: 'Do dishes after dinner',
+    emoji: '🫧',
+    starsValue: 3
+  }]
+};
+
+// ─── Router ──────────────────────────────────────────────────────────────────
+function App() {
+  const [screen, setScreen] = useState('home');
+  const [childId, setChildId] = useState(null);
+  const go = (s, id = null) => {
+    setChildId(id);
+    setScreen(s);
+  };
+  return /*#__PURE__*/React.createElement("div", {
+    id: "root"
+  }, /*#__PURE__*/React.createElement(HomeScreen, {
+    active: screen === 'home',
+    onChild: id => go('child', id),
+    onAdmin: () => go('admin-login')
+  }), /*#__PURE__*/React.createElement(ChildScreen, {
+    active: screen === 'child',
+    childId: childId,
+    onBack: () => go('home')
+  }), /*#__PURE__*/React.createElement(AdminLogin, {
+    active: screen === 'admin-login',
+    onBack: () => go('home'),
+    onSuccess: () => go('admin-panel')
+  }), /*#__PURE__*/React.createElement(AdminPanel, {
+    active: screen === 'admin-panel',
+    onBack: () => go('home')
+  }));
+}
+
+// ─── Home Screen ─────────────────────────────────────────────────────────────
+function HomeScreen({
+  active,
+  onChild,
+  onAdmin
+}) {
+  const [children, setChildren] = useState([]);
+  const [chores, setChores] = useState([]);
+  const [completions, setCompletions] = useState([]);
+  const [appName, setAppName] = useState('Family Chores ⭐');
+  const [loading, setLoading] = useState(true);
+  const load = useCallback(async () => {
+    setLoading(true);
+    try {
+      const [kids, ch, comp, name] = await Promise.all([db.getChildren(), db.getChores(), db.getCompletions(getToday()), db.getSetting('app_name')]);
+      setChildren(kids);
+      setChores(ch);
+      setCompletions(comp);
+      if (name) setAppName(name);
+    } catch (e) {
+      console.error('HomeScreen load error:', e);
+      alert('Error loading data: ' + (e.message || JSON.stringify(e)));
+    }
+    setLoading(false);
+  }, []);
+  useEffect(() => {
+    if (active) load();
+  }, [active]);
+  const starsToday = childId => {
+    return completions.filter(c => c.child_id === childId).reduce((sum, c) => {
+      const ch = chores.find(ch => ch.id === c.chore_id);
+      return sum + (ch?.stars_value ?? 1);
+    }, 0);
+  };
+  const progress = childId => {
+    const dayName = DAY_NAMES[new Date().getDay()];
+    const assigned = chores.filter(ch => ch.assigned_to === childId && ch.days?.includes(dayName));
+    const done = assigned.filter(ch => completions.some(c => c.chore_id === ch.id && c.child_id === childId));
+    return {
+      done: done.length,
+      total: assigned.length
+    };
+  };
+  if (!active) return null;
+  return /*#__PURE__*/React.createElement("div", {
+    className: "screen",
+    style: {
+      background: 'linear-gradient(160deg,#667eea,#c084fc,#f472b6)'
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "scroll-body",
+    style: {
+      paddingTop: `calc(${getComputedStyle(document.documentElement).getPropertyValue('--safe-top') || '0px'} + 24px)`
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      textAlign: 'center',
+      marginBottom: 24
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: 32,
+      fontWeight: 900,
+      color: '#fff',
+      textShadow: '1px 2px 4px rgba(0,0,0,.2)',
+      marginBottom: 4
+    }
+  }, appName), /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: 18,
+      fontWeight: 700,
+      color: 'rgba(255,255,255,.9)'
+    }
+  }, "Who's doing chores today? 🌟")), loading ? /*#__PURE__*/React.createElement("div", {
+    style: {
+      textAlign: 'center',
+      fontSize: 40
+    }
+  }, "⏳") : children.length === 0 ? /*#__PURE__*/React.createElement("div", {
+    style: {
+      background: 'rgba(255,255,255,.2)',
+      borderRadius: 20,
+      padding: 32,
+      textAlign: 'center',
+      color: '#fff',
+      fontWeight: 700,
+      fontSize: 16,
+      lineHeight: 1.6
+    }
+  }, "No children yet!", /*#__PURE__*/React.createElement("br", null), "Ask a parent to set up the app.") : /*#__PURE__*/React.createElement("div", {
+    className: "card-grid"
+  }, children.map((child, i) => {
+    const color = CARD_COLORS[i % CARD_COLORS.length];
+    const {
+      done,
+      total
+    } = progress(child.id);
+    const stars = starsToday(child.id);
+    const allDone = total > 0 && done === total;
+    return /*#__PURE__*/React.createElement("button", {
+      key: child.id,
+      className: "child-card",
+      onClick: () => onChild(child.id),
+      style: {
+        background: color.bg,
+        '--shadow-color': color.shadow
+      }
+    }, allDone && /*#__PURE__*/React.createElement("div", {
+      className: "all-done-badge"
+    }, "🏆 All Done!"), /*#__PURE__*/React.createElement("div", {
+      className: "child-card-emoji"
+    }, child.emoji), /*#__PURE__*/React.createElement("div", {
+      className: "child-card-name"
+    }, child.name), child.age && /*#__PURE__*/React.createElement("div", {
+      className: "child-card-age"
+    }, "Age ", child.age), /*#__PURE__*/React.createElement("div", {
+      className: "child-card-stars"
+    }, "⭐ ", stars, " today"), total > 0 && /*#__PURE__*/React.createElement("div", {
+      className: "child-card-progress"
+    }, done, "/", total, " done"));
+  })), /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: 'flex',
+      justifyContent: 'center'
+    }
+  }, /*#__PURE__*/React.createElement("button", {
+    className: "btn btn-ghost",
+    style: {
+      width: 'auto',
+      padding: '10px 28px'
+    },
+    onClick: onAdmin
+  }, "🔐 Admin"))));
+}
+
+// ─── Child Screen ─────────────────────────────────────────────────────────────
+function ChildScreen({
+  active,
+  childId,
+  onBack
+}) {
+  const [child, setChild] = useState(null);
+  const [chores, setChores] = useState([]);
+  const [completions, setCompletions] = useState([]);
+  const [schedules, setSchedules] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [expanded, setExpanded] = useState(null);
+  const [showExtra, setShowExtra] = useState(false);
+  const [extraName, setExtraName] = useState('');
+  const [extraStars, setExtraStars] = useState('1');
+  const [submitting, setSubmitting] = useState(false);
+  const load = useCallback(async () => {
+    if (!childId) return;
+    setLoading(true);
+    const [kids, ch, comp, sched] = await Promise.all([db.getChildren(), db.getChores(), db.getCompletions(getToday()), db.getWeeklySchedules(getWeekMonday())]);
+    setChild(kids.find(k => k.id === childId) ?? null);
+    setChores(ch);
+    setCompletions(comp);
+    setSchedules(sched);
+    setLoading(false);
+  }, [childId]);
+  useEffect(() => {
+    if (active) load();
+  }, [active, childId]);
+  if (!active) return null;
+  const dayName = DAY_NAMES[new Date().getDay()];
+  const weekMonday = getWeekMonday();
+  const myChores = chores.filter(ch => {
+    const assigned = getEffectiveAssignment(ch, weekMonday, schedules);
+    return assigned === childId && ch.days?.includes(dayName);
+  });
+  const isDone = choreId => completions.some(c => c.chore_id === choreId && c.child_id === childId);
+  const doneCount = myChores.filter(ch => isDone(ch.id)).length;
+  const allDone = myChores.length > 0 && doneCount === myChores.length;
+  const starsToday = completions.filter(c => c.child_id === childId).reduce((sum, c) => {
+    const ch = chores.find(ch => ch.id === c.chore_id);
+    return sum + (ch?.stars_value ?? 1);
+  }, 0);
+  const childIndex = child ? parseInt(child.id.slice(-1), 16) : 0;
+  const cardColor = CARD_COLORS[childIndex % CARD_COLORS.length];
+  const toggle = async chore => {
+    const done = isDone(chore.id);
+    if (done) {
+      await db.unmarkComplete(chore.id, getToday());
+      setCompletions(prev => prev.filter(c => !(c.chore_id === chore.id && c.child_id === childId)));
+    } else {
+      await db.markComplete(chore.id, childId, getToday());
+      setCompletions(prev => [...prev, {
+        id: Date.now() + '',
+        chore_id: chore.id,
+        child_id: childId,
+        completed_date: getToday()
+      }]);
+    }
+  };
+  const submitExtra = async () => {
+    if (!extraName.trim()) return;
+    setSubmitting(true);
+    await db.addExtraRequest({
+      child_id: childId,
+      name: extraName.trim(),
+      requested_stars: parseInt(extraStars) || 1,
+      status: 'pending',
+      date: getToday()
+    });
+    setExtraName('');
+    setExtraStars('1');
+    setShowExtra(false);
+    setSubmitting(false);
+    alert('Submitted! 🎉 Ask a parent to approve your extra chore.');
+  };
+  return /*#__PURE__*/React.createElement("div", {
+    className: "screen"
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      background: cardColor.bg,
+      padding: 'calc(var(--safe-top) + 8px) 20px 20px',
+      textAlign: 'center'
+    }
+  }, /*#__PURE__*/React.createElement("button", {
+    className: "back-btn",
+    style: {
+      color: 'rgba(255,255,255,.9)',
+      position: 'absolute',
+      left: 16,
+      top: 'calc(var(--safe-top) + 14px)'
+    },
+    onClick: onBack
+  }, "← Back"), loading ? null : /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: 56
+    }
+  }, child?.emoji), /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontWeight: 900,
+      fontSize: 28,
+      color: '#fff',
+      marginTop: 4
+    }
+  }, child?.name), /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontWeight: 800,
+      fontSize: 16,
+      color: 'rgba(255,255,255,.9)',
+      marginTop: 4
+    }
+  }, "⭐ ", starsToday, " stars today"))), /*#__PURE__*/React.createElement("div", {
+    className: "scroll-body",
+    style: {
+      background: '#f8f7ff'
+    }
+  }, loading ? /*#__PURE__*/React.createElement("div", {
+    className: "spinner"
+  }, "⏳") : /*#__PURE__*/React.createElement(React.Fragment, null, myChores.length > 0 && /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontWeight: 700,
+      fontSize: 14,
+      color: '#666',
+      marginBottom: 6
+    }
+  }, doneCount, " of ", myChores.length, " done"), /*#__PURE__*/React.createElement("div", {
+    className: "progress-bar"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "progress-fill",
+    style: {
+      width: `${doneCount / myChores.length * 100}%`,
+      background: cardColor.bg
+    }
+  }))), allDone && /*#__PURE__*/React.createElement("div", {
+    style: {
+      background: cardColor.bg + '22',
+      border: `2px solid ${cardColor.bg}44`,
+      borderRadius: 20,
+      padding: 20,
+      textAlign: 'center',
+      marginBottom: 16
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: 48
+    }
+  }, "🏆"), /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontWeight: 900,
+      fontSize: 20,
+      color: '#6366f1',
+      marginTop: 8
+    }
+  }, "ALL DONE! Amazing job, ", child?.name, "!"), /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontWeight: 700,
+      fontSize: 15,
+      color: '#a78bfa',
+      marginTop: 4
+    }
+  }, "You earned ⭐", starsToday, " stars today!")), myChores.length === 0 ? /*#__PURE__*/React.createElement("div", {
+    style: {
+      textAlign: 'center',
+      padding: 40
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: 52,
+      marginBottom: 12
+    }
+  }, "🎉"), /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontWeight: 700,
+      fontSize: 17,
+      color: '#666',
+      lineHeight: 1.6
+    }
+  }, "No chores today!", /*#__PURE__*/React.createElement("br", null), "Enjoy your free time!")) : myChores.map((chore, i) => {
+    const done = isDone(chore.id);
+    const rc = ROW_COLORS[i % ROW_COLORS.length];
+    return /*#__PURE__*/React.createElement("div", {
+      key: chore.id,
+      className: "chore-row",
+      style: {
+        background: rc.bg
+      }
+    }, /*#__PURE__*/React.createElement("div", {
+      className: "chore-main",
+      onClick: () => toggle(chore)
+    }, /*#__PURE__*/React.createElement("div", {
+      className: "chore-icon",
+      style: {
+        background: rc.icon
+      }
+    }, chore.emoji), /*#__PURE__*/React.createElement("div", {
+      style: {
+        flex: 1
+      }
+    }, /*#__PURE__*/React.createElement("div", {
+      className: `chore-name${done ? ' done' : ''}`
+    }, chore.name), /*#__PURE__*/React.createElement("div", {
+      className: "chore-stars"
+    }, "⭐ ", chore.stars_value, " star", chore.stars_value !== 1 ? 's' : '')), /*#__PURE__*/React.createElement("div", {
+      className: "checkbox checked",
+      style: done ? {
+        '--check-color': rc.check,
+        display: 'flex'
+      } : {
+        display: 'flex'
+      }
+    }, done ? '✓' : '')), chore.description && /*#__PURE__*/React.createElement("div", {
+      style: {
+        padding: '0 14px 12px'
+      }
+    }, /*#__PURE__*/React.createElement("button", {
+      style: {
+        background: 'none',
+        border: 'none',
+        fontFamily: 'Nunito',
+        fontWeight: 700,
+        fontSize: 14,
+        color: '#6b7280',
+        cursor: 'pointer'
+      },
+      onClick: () => setExpanded(expanded === chore.id ? null : chore.id)
+    }, expanded === chore.id ? '▲ Hide' : 'ℹ Info'), expanded === chore.id && /*#__PURE__*/React.createElement("div", {
+      style: {
+        fontWeight: 400,
+        fontSize: 14,
+        color: '#374151',
+        marginTop: 6,
+        lineHeight: 1.5
+      }
+    }, chore.description)));
+  }), /*#__PURE__*/React.createElement("div", {
+    style: {
+      textAlign: 'center',
+      marginTop: 16
+    }
+  }, /*#__PURE__*/React.createElement("button", {
+    onClick: () => setShowExtra(true),
+    style: {
+      background: 'none',
+      border: '2px dashed #6366f1',
+      borderRadius: 16,
+      padding: '10px 24px',
+      fontFamily: 'Nunito',
+      fontWeight: 800,
+      fontSize: 16,
+      color: '#6366f1',
+      cursor: 'pointer'
+    }
+  }, "➕ I did an extra chore!")))), showExtra && /*#__PURE__*/React.createElement("div", {
+    className: "modal-overlay",
+    onClick: e => {
+      if (e.target === e.currentTarget) setShowExtra(false);
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "modal-card"
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontWeight: 900,
+      fontSize: 24,
+      color: '#1f2937',
+      marginBottom: 20
+    }
+  }, "Extra Chore 🌟"), /*#__PURE__*/React.createElement("label", {
+    className: "label"
+  }, "What did you do?"), /*#__PURE__*/React.createElement("input", {
+    className: "input",
+    value: extraName,
+    onChange: e => setExtraName(e.target.value),
+    placeholder: "e.g. Cleaned the garage"
+  }), /*#__PURE__*/React.createElement("label", {
+    className: "label"
+  }, "How many stars?"), /*#__PURE__*/React.createElement("div", {
+    className: "stars-row"
+  }, [1, 2, 3, 4, 5].map(n => /*#__PURE__*/React.createElement("button", {
+    key: n,
+    className: `star-btn${extraStars === String(n) ? ' active' : ''}`,
+    onClick: () => setExtraStars(String(n))
+  }, "⭐", n))), /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: 'flex',
+      gap: 12,
+      marginTop: 8
+    }
+  }, /*#__PURE__*/React.createElement("button", {
+    className: "btn",
+    style: {
+      background: '#f3f4f6',
+      color: '#374151',
+      border: '2px solid #e5e7eb'
+    },
+    onClick: () => setShowExtra(false)
+  }, "Cancel"), /*#__PURE__*/React.createElement("button", {
+    className: "btn",
+    style: {
+      background: cardColor.bg,
+      color: '#fff'
+    },
+    onClick: submitExtra,
+    disabled: submitting || !extraName.trim()
+  }, submitting ? '...' : 'Submit!')))));
+}
+
+// ─── Admin Login ──────────────────────────────────────────────────────────────
+function AdminLogin({
+  active,
+  onBack,
+  onSuccess
+}) {
+  const [pwd, setPwd] = useState('');
+  const [loading, setLoading] = useState(false);
+  const login = async () => {
+    if (!pwd.trim()) return;
+    setLoading(true);
+    const stored = await db.getSetting('admin_password');
+    if (pwd === (stored ?? 'admin123')) {
+      setPwd('');
+      onSuccess();
+    } else {
+      alert('Wrong password');
+      setPwd('');
+    }
+    setLoading(false);
+  };
+  if (!active) return null;
+  return /*#__PURE__*/React.createElement("div", {
+    className: "screen",
+    style: {
+      background: 'linear-gradient(160deg,#667eea,#c084fc,#f472b6)',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      padding: 24
+    }
+  }, /*#__PURE__*/React.createElement("button", {
+    className: "back-btn",
+    style: {
+      position: 'absolute',
+      top: 'calc(var(--safe-top)+16px)',
+      left: 24,
+      color: 'rgba(255,255,255,.9)'
+    },
+    onClick: onBack
+  }, "← Back"), /*#__PURE__*/React.createElement("div", {
+    className: "card",
+    style: {
+      width: '100%',
+      maxWidth: 400,
+      textAlign: 'center',
+      padding: 28
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: 52,
+      marginBottom: 12
+    }
+  }, "🔐"), /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontWeight: 900,
+      fontSize: 26,
+      color: '#1f2937',
+      marginBottom: 4
+    }
+  }, "Admin Panel"), /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontWeight: 700,
+      fontSize: 15,
+      color: '#6b7280',
+      marginBottom: 24
+    }
+  }, "Enter your password"), /*#__PURE__*/React.createElement("input", {
+    className: "input",
+    type: "password",
+    value: pwd,
+    onChange: e => setPwd(e.target.value),
+    placeholder: "Password",
+    onKeyDown: e => e.key === 'Enter' && login(),
+    autoFocus: true,
+    style: {
+      marginBottom: 16
+    }
+  }), /*#__PURE__*/React.createElement("button", {
+    className: "btn btn-primary",
+    onClick: login,
+    disabled: loading
+  }, loading ? 'Checking...' : 'Login'), /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontWeight: 400,
+      fontSize: 13,
+      color: '#9ca3af',
+      marginTop: 16
+    }
+  }, "Default password: admin123")));
+}
+
+// ─── Admin Panel ──────────────────────────────────────────────────────────────
+const TABS = ['Kids', 'Chores', 'Schedule', 'Requests', 'Stars', 'Settings'];
+function AdminPanel({
+  active,
+  onBack
+}) {
+  const [tab, setTab] = useState('Kids');
+  const [children, setChildren] = useState([]);
+  const [chores, setChores] = useState([]);
+  const [requests, setRequests] = useState([]);
+  const [schedules, setSchedules] = useState([]);
+  const [starTotals, setStarTotals] = useState({});
+  const [appName, setAppName] = useState('Family Chores ⭐');
+  const [adminPassword, setAdminPassword] = useState('admin123');
+  const [loading, setLoading] = useState(true);
+  const [weekOffset, setWeekOffset] = useState(0);
+  const weekMonday = getWeekMonday(weekOffset);
+  const weekEnd = addDays(weekMonday, 6);
+  const load = useCallback(async () => {
+    setLoading(true);
+    try {
+      const [kids, ch, reqs, sched, totals, name, pwd] = await Promise.all([db.getChildren(), db.getChores(), db.getExtraRequests(), db.getWeeklySchedules(getWeekMonday(weekOffset)), db.getStarTotals(), db.getSetting('app_name'), db.getSetting('admin_password')]);
+      setChildren(kids);
+      setChores(ch);
+      setRequests(reqs);
+      setSchedules(sched);
+      setStarTotals(totals);
+      if (name) setAppName(name);
+      if (pwd) setAdminPassword(pwd);
+    } catch (e) {
+      console.error('AdminPanel load error:', e);
+      alert('Error loading admin data: ' + (e.message || JSON.stringify(e)));
+    }
+    setLoading(false);
+  }, [weekOffset]);
+  useEffect(() => {
+    if (active) load();
+  }, [active, weekOffset]);
+  if (!active) return null;
+  return /*#__PURE__*/React.createElement("div", {
+    className: "screen"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "header"
+  }, /*#__PURE__*/React.createElement("button", {
+    className: "back-btn",
+    onClick: onBack
+  }, "← Home"), /*#__PURE__*/React.createElement("div", {
+    className: "header-title"
+  }, "⚙️ Admin Panel")), /*#__PURE__*/React.createElement("div", {
+    className: "tab-bar"
+  }, TABS.map(t => /*#__PURE__*/React.createElement("button", {
+    key: t,
+    className: `tab${tab === t ? ' active' : ''}`,
+    onClick: () => setTab(t)
+  }, t))), /*#__PURE__*/React.createElement("div", {
+    className: "scroll-body"
+  }, loading ? /*#__PURE__*/React.createElement("div", {
+    className: "spinner"
+  }, "⏳") : /*#__PURE__*/React.createElement(React.Fragment, null, tab === 'Kids' && /*#__PURE__*/React.createElement(KidsTab, {
+    children: children,
+    onRefresh: load
+  }), tab === 'Chores' && /*#__PURE__*/React.createElement(ChoresTab, {
+    chores: chores,
+    children: children,
+    onRefresh: load
+  }), tab === 'Schedule' && /*#__PURE__*/React.createElement(ScheduleTab, {
+    chores: chores,
+    children: children,
+    schedules: schedules,
+    weekMonday: weekMonday,
+    weekEnd: weekEnd,
+    weekOffset: weekOffset,
+    setWeekOffset: setWeekOffset,
+    onRefresh: load
+  }), tab === 'Requests' && /*#__PURE__*/React.createElement(RequestsTab, {
+    requests: requests,
+    children: children,
+    onRefresh: load
+  }), tab === 'Stars' && /*#__PURE__*/React.createElement(StarsTab, {
+    children: children,
+    starTotals: starTotals,
+    onRefresh: load
+  }), tab === 'Settings' && /*#__PURE__*/React.createElement(SettingsTab, {
+    appName: appName,
+    adminPassword: adminPassword,
+    onRefresh: load
+  }))));
+}
+
+// ─── Kids Tab ─────────────────────────────────────────────────────────────────
+function KidsTab({
+  children,
+  onRefresh
+}) {
+  const [name, setName] = useState('');
+  const [age, setAge] = useState('');
+  const [emoji, setEmoji] = useState('😊');
+  const [saving, setSaving] = useState(false);
+  const save = async () => {
+    if (!name.trim()) return;
+    setSaving(true);
+    await db.addChild({
+      name: name.trim(),
+      age: age ? parseInt(age) : null,
+      emoji,
+      sort_order: children.length
+    });
+    setName('');
+    setAge('');
+    setEmoji('😊');
+    onRefresh();
+    setSaving(false);
+  };
+  const remove = async child => {
+    if (confirm(`Remove ${child.name}? This will delete all their data.`)) {
+      await db.deleteChild(child.id);
+      onRefresh();
+    }
+  };
+  return /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
+    className: "section-title"
+  }, "Children"), children.map((child, i) => /*#__PURE__*/React.createElement("div", {
+    key: child.id,
+    className: "list-item",
+    style: {
+      background: CARD_COLORS[i % CARD_COLORS.length].bg + '22'
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "list-emoji"
+  }, child.emoji), /*#__PURE__*/React.createElement("div", {
+    style: {
+      flex: 1
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "list-name"
+  }, child.name), child.age && /*#__PURE__*/React.createElement("div", {
+    className: "list-sub"
+  }, "Age ", child.age)), /*#__PURE__*/React.createElement("button", {
+    className: "remove-btn",
+    onClick: () => remove(child)
+  }, "✕"))), /*#__PURE__*/React.createElement("div", {
+    className: "section-title"
+  }, "Add Child"), /*#__PURE__*/React.createElement("div", {
+    className: "card"
+  }, /*#__PURE__*/React.createElement("label", {
+    className: "label"
+  }, "Name"), /*#__PURE__*/React.createElement("input", {
+    className: "input",
+    value: name,
+    onChange: e => setName(e.target.value),
+    placeholder: "e.g. Emma"
+  }), /*#__PURE__*/React.createElement("label", {
+    className: "label"
+  }, "Age (optional)"), /*#__PURE__*/React.createElement("input", {
+    className: "input",
+    value: age,
+    onChange: e => setAge(e.target.value),
+    placeholder: "e.g. 9",
+    type: "number"
+  }), /*#__PURE__*/React.createElement("label", {
+    className: "label"
+  }, "Emoji"), /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: 'flex',
+      flexWrap: 'wrap',
+      gap: 8,
+      margin: '8px 0 16px'
+    }
+  }, CHILD_EMOJIS.map(e => /*#__PURE__*/React.createElement("button", {
+    key: e,
+    onClick: () => setEmoji(e),
+    style: {
+      fontSize: 26,
+      padding: 6,
+      borderRadius: 10,
+      border: `2px solid ${emoji === e ? '#6366f1' : 'transparent'}`,
+      background: emoji === e ? '#eef2ff' : '#f3f4f6',
+      cursor: 'pointer'
+    }
+  }, e))), /*#__PURE__*/React.createElement("button", {
+    className: "btn btn-primary",
+    onClick: save,
+    disabled: saving
+  }, saving ? 'Saving...' : 'Add Child')));
+}
+
+// ─── Chores Tab ───────────────────────────────────────────────────────────────
+function ChoresTab({
+  chores,
+  children,
+  onRefresh
+}) {
+  const [name, setName] = useState('');
+  const [emoji, setEmoji] = useState('✅');
+  const [stars, setStars] = useState('1');
+  const [desc, setDesc] = useState('');
+  const [assignedTo, setAssignedTo] = useState(null);
+  const [saving, setSaving] = useState(false);
+  const save = async () => {
+    if (!name.trim()) return;
+    setSaving(true);
+    await db.addChore({
+      name: name.trim(),
+      emoji,
+      stars_value: parseInt(stars) || 1,
+      days: DAYS,
+      assigned_to: assignedTo,
+      description: desc.trim(),
+      sort_order: chores.length
+    });
+    setName('');
+    setDesc('');
+    setStars('1');
+    setAssignedTo(null);
+    onRefresh();
+    setSaving(false);
+  };
+  const addMeal = async (meal, childId) => {
+    for (const c of MEAL_CHORES[meal]) await db.addChore({
+      name: c.name,
+      emoji: c.emoji,
+      stars_value: c.starsValue,
+      days: DAYS,
+      assigned_to: childId,
+      description: '',
+      sort_order: chores.length
+    });
+    onRefresh();
+    alert(`${meal} chores added!`);
+  };
+  const remove = async chore => {
+    if (confirm(`Remove "${chore.name}"?`)) {
+      await db.deleteChore(chore.id);
+      onRefresh();
+    }
+  };
+  return /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
+    className: "section-title"
+  }, "Chores (", chores.length, ")"), chores.map(ch => {
+    const assignee = children.find(c => c.id === ch.assigned_to);
+    return /*#__PURE__*/React.createElement("div", {
+      key: ch.id,
+      className: "list-item"
+    }, /*#__PURE__*/React.createElement("div", {
+      className: "list-emoji"
+    }, ch.emoji), /*#__PURE__*/React.createElement("div", {
+      style: {
+        flex: 1
+      }
+    }, /*#__PURE__*/React.createElement("div", {
+      className: "list-name"
+    }, ch.name), /*#__PURE__*/React.createElement("div", {
+      className: "list-sub"
+    }, "⭐", ch.stars_value, " · ", assignee ? assignee.name : 'Unassigned')), /*#__PURE__*/React.createElement("button", {
+      className: "remove-btn",
+      onClick: () => remove(ch)
+    }, "✕"));
+  }), /*#__PURE__*/React.createElement("div", {
+    className: "section-title"
+  }, "Quick Meal Setup"), /*#__PURE__*/React.createElement("div", {
+    className: "card"
+  }, ['breakfast', 'lunch', 'dinner'].map(meal => /*#__PURE__*/React.createElement("div", {
+    key: meal,
+    style: {
+      marginBottom: 14
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontWeight: 800,
+      fontSize: 14,
+      color: '#1f2937',
+      marginBottom: 8,
+      textTransform: 'capitalize'
+    }
+  }, meal), /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: 'flex',
+      gap: 8,
+      flexWrap: 'wrap'
+    }
+  }, /*#__PURE__*/React.createElement("button", {
+    className: "chip",
+    onClick: () => addMeal(meal, null)
+  }, "Unassigned"), children.map(child => /*#__PURE__*/React.createElement("button", {
+    key: child.id,
+    className: "chip",
+    onClick: () => addMeal(meal, child.id)
+  }, child.emoji, " ", child.name)))))), /*#__PURE__*/React.createElement("div", {
+    className: "section-title"
+  }, "Add from Library"), /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: 'flex',
+      flexWrap: 'wrap',
+      margin: '0 0 16px'
+    }
+  }, CHORE_LIBRARY.map(c => /*#__PURE__*/React.createElement("button", {
+    key: c.name,
+    className: "chip",
+    onClick: () => {
+      setName(c.name);
+      setEmoji(c.emoji);
+      setStars(String(c.starsValue));
+    }
+  }, c.emoji, " ", c.name))), /*#__PURE__*/React.createElement("div", {
+    className: "section-title"
+  }, "Add Chore"), /*#__PURE__*/React.createElement("div", {
+    className: "card"
+  }, /*#__PURE__*/React.createElement("label", {
+    className: "label"
+  }, "Name"), /*#__PURE__*/React.createElement("input", {
+    className: "input",
+    value: name,
+    onChange: e => setName(e.target.value),
+    placeholder: "Chore name"
+  }), /*#__PURE__*/React.createElement("label", {
+    className: "label"
+  }, "Stars"), /*#__PURE__*/React.createElement("div", {
+    className: "stars-row"
+  }, [1, 2, 3, 4, 5].map(n => /*#__PURE__*/React.createElement("button", {
+    key: n,
+    className: `star-btn${stars === String(n) ? ' active' : ''}`,
+    onClick: () => setStars(String(n))
+  }, "⭐", n))), /*#__PURE__*/React.createElement("label", {
+    className: "label"
+  }, "Assign to"), /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: 'flex',
+      gap: 8,
+      flexWrap: 'wrap',
+      margin: '8px 0 12px'
+    }
+  }, /*#__PURE__*/React.createElement("button", {
+    className: `pill${!assignedTo ? ' active' : ''}`,
+    onClick: () => setAssignedTo(null)
+  }, "Anyone"), children.map(c => /*#__PURE__*/React.createElement("button", {
+    key: c.id,
+    className: `pill${assignedTo === c.id ? ' active' : ''}`,
+    onClick: () => setAssignedTo(c.id)
+  }, c.emoji, " ", c.name))), /*#__PURE__*/React.createElement("label", {
+    className: "label"
+  }, "Emoji"), /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: 'flex',
+      flexWrap: 'wrap',
+      gap: 8,
+      margin: '8px 0 16px'
+    }
+  }, CHORE_EMOJIS.map(e => /*#__PURE__*/React.createElement("button", {
+    key: e,
+    onClick: () => setEmoji(e),
+    style: {
+      fontSize: 24,
+      padding: 6,
+      borderRadius: 10,
+      border: `2px solid ${emoji === e ? '#6366f1' : 'transparent'}`,
+      background: emoji === e ? '#eef2ff' : '#f3f4f6',
+      cursor: 'pointer'
+    }
+  }, e))), /*#__PURE__*/React.createElement("label", {
+    className: "label"
+  }, "Description (optional)"), /*#__PURE__*/React.createElement("textarea", {
+    className: "input",
+    value: desc,
+    onChange: e => setDesc(e.target.value),
+    placeholder: "Instructions for the child...",
+    rows: 3,
+    style: {
+      resize: 'none'
+    }
+  }), /*#__PURE__*/React.createElement("button", {
+    className: "btn btn-primary",
+    style: {
+      marginTop: 12
+    },
+    onClick: save,
+    disabled: saving
+  }, saving ? 'Saving...' : 'Add Chore')));
+}
+
+// ─── Schedule Tab ─────────────────────────────────────────────────────────────
+function ScheduleTab({
+  chores,
+  children,
+  schedules,
+  weekMonday,
+  weekEnd,
+  weekOffset,
+  setWeekOffset,
+  onRefresh
+}) {
+  const getAssignment = chore => getEffectiveAssignment(chore, weekMonday, schedules);
+  const change = async (chore, childId) => {
+    await db.setWeeklySchedule(weekMonday, chore.id, childId);
+    onRefresh();
+  };
+  const copyToNext = async () => {
+    await db.copyWeekToNext(weekMonday, addDays(weekMonday, 7), chores);
+    alert('Copied to next week!');
+  };
+  return /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
+    className: "week-nav"
+  }, /*#__PURE__*/React.createElement("button", {
+    className: "week-nav-btn",
+    onClick: () => setWeekOffset(weekOffset - 1)
+  }, "◀"), /*#__PURE__*/React.createElement("div", {
+    style: {
+      textAlign: 'center'
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontWeight: 800,
+      fontSize: 16,
+      color: '#1f2937'
+    }
+  }, "Week of ", fmtDate(weekMonday)), /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontWeight: 400,
+      fontSize: 13,
+      color: '#6b7280',
+      marginTop: 2
+    }
+  }, fmtDate(weekMonday), " – ", fmtDate(weekEnd))), /*#__PURE__*/React.createElement("button", {
+    className: "week-nav-btn",
+    onClick: () => setWeekOffset(weekOffset + 1)
+  }, "▶")), chores.length === 0 ? /*#__PURE__*/React.createElement("div", {
+    className: "empty-text"
+  }, "No chores yet.") : chores.map(chore => {
+    const assigned = getAssignment(chore);
+    return /*#__PURE__*/React.createElement("div", {
+      key: chore.id,
+      className: "card"
+    }, /*#__PURE__*/React.createElement("div", {
+      style: {
+        fontWeight: 800,
+        fontSize: 15,
+        color: '#1f2937',
+        marginBottom: 8
+      }
+    }, chore.emoji, " ", chore.name), /*#__PURE__*/React.createElement("div", {
+      style: {
+        display: 'flex',
+        gap: 8,
+        flexWrap: 'wrap'
+      }
+    }, /*#__PURE__*/React.createElement("button", {
+      className: `pill${!assigned ? ' active' : ''}`,
+      onClick: () => change(chore, null)
+    }, "Unassigned"), children.map(c => /*#__PURE__*/React.createElement("button", {
+      key: c.id,
+      className: `pill${assigned === c.id ? ' active' : ''}`,
+      onClick: () => change(chore, c.id)
+    }, c.emoji, " ", c.name))));
+  }), /*#__PURE__*/React.createElement("button", {
+    className: "btn btn-primary",
+    style: {
+      marginTop: 8
+    },
+    onClick: copyToNext
+  }, "📋 Copy This Week → Next Week"));
+}
+
+// ─── Requests Tab ─────────────────────────────────────────────────────────────
+function RequestsTab({
+  requests,
+  children,
+  onRefresh
+}) {
+  const pending = requests.filter(r => r.status === 'pending');
+  const done = requests.filter(r => r.status !== 'pending');
+  const childName = id => children.find(c => c.id === id)?.name ?? 'Unknown';
+  const handle = async (id, status) => {
+    await db.updateExtraRequest(id, status);
+    onRefresh();
+  };
+  return /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
+    className: "section-title"
+  }, "Pending (", pending.length, ")"), pending.length === 0 && /*#__PURE__*/React.createElement("div", {
+    className: "empty-text"
+  }, "No pending requests."), pending.map(req => /*#__PURE__*/React.createElement("div", {
+    key: req.id,
+    className: "request-card"
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontWeight: 800,
+      fontSize: 14,
+      color: '#6366f1',
+      marginBottom: 4
+    }
+  }, childName(req.child_id)), /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontWeight: 800,
+      fontSize: 16,
+      color: '#1f2937'
+    }
+  }, req.name), /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontWeight: 400,
+      fontSize: 13,
+      color: '#6b7280',
+      marginTop: 4
+    }
+  }, "Wants ⭐", req.requested_stars, " stars"), /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: 'flex',
+      gap: 10,
+      marginTop: 12
+    }
+  }, /*#__PURE__*/React.createElement("button", {
+    className: "btn btn-success",
+    onClick: () => handle(req.id, 'approved')
+  }, "✓ Approve"), /*#__PURE__*/React.createElement("button", {
+    className: "btn btn-danger",
+    onClick: () => handle(req.id, 'rejected')
+  }, "✕ Reject")))), done.length > 0 && /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("div", {
+    className: "section-title"
+  }, "Reviewed"), done.map(req => /*#__PURE__*/React.createElement("div", {
+    key: req.id,
+    className: `request-card ${req.status}`
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontWeight: 800,
+      fontSize: 14,
+      color: '#6366f1'
+    }
+  }, childName(req.child_id)), /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontWeight: 800,
+      fontSize: 16,
+      color: '#1f2937'
+    }
+  }, req.name), /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontWeight: 700,
+      fontSize: 13,
+      color: '#6b7280',
+      marginTop: 4
+    }
+  }, req.status === 'approved' ? '✅ Approved' : '❌ Rejected', " · ⭐", req.requested_stars)))));
+}
+
+// ─── Stars Tab ────────────────────────────────────────────────────────────────
+function StarsTab({
+  children,
+  starTotals,
+  onRefresh
+}) {
+  // modal state
+  const [modal, setModal] = useState(null); // { child, mode: 'bonus'|'deduct'|'spend', reward? }
+  const [amount, setAmount] = useState('');
+  const [reason, setReason] = useState('');
+  const [saving, setSaving] = useState(false);
+  // history drawer
+  const [histChild, setHistChild] = useState(null);
+  const [adjustments, setAdjustments] = useState([]);
+  const sorted = [...children].sort((a, b) => (starTotals[b.id] ?? 0) - (starTotals[a.id] ?? 0));
+  const max = Math.max(...Object.values(starTotals), 1);
+  const openModal = (child, mode, reward = null) => {
+    setModal({
+      child,
+      mode,
+      reward
+    });
+    setAmount('');
+    setReason('');
+  };
+  const closeModal = () => setModal(null);
+  const openHistory = async child => {
+    setHistChild(child);
+    const adjs = await db.getStarAdjustments(child.id);
+    setAdjustments(adjs);
+  };
+  const save = async () => {
+    if (!modal || !amount.trim()) return;
+    const n = parseInt(amount);
+    if (isNaN(n) || n <= 0) return;
+    setSaving(true);
+    const delta = modal.mode === 'bonus' ? n : -n;
+    const r = reason.trim() || (modal.mode === 'bonus' ? 'Bonus stars' : 'Deduction');
+    try {
+      await db.addStarAdjustment(modal.child.id, delta, r);
+      setSaving(false);
+      closeModal();
+      onRefresh();
+    } catch (e) {
+      setSaving(false);
+      alert('Could not save stars. The star_adjustments table may not exist in Supabase yet.\n\nPlease run the SQL in supabase/setup.sql in your Supabase SQL Editor.\n\nError: ' + (e.message || JSON.stringify(e)));
+    }
+  };
+  const spendReward = async () => {
+    if (!modal) return;
+    const {
+      child,
+      reward
+    } = modal;
+    const total = starTotals[child.id] ?? 0;
+    if (total < reward.cost) {
+      alert(`Not enough stars! Needs ${reward.cost} ⭐ but ${child.name} only has ${total}.`);
+      return;
+    }
+    setSaving(true);
+    try {
+      await db.addStarAdjustment(child.id, -reward.cost, reward.name);
+      setSaving(false);
+      closeModal();
+      onRefresh();
+    } catch (e) {
+      setSaving(false);
+      alert('Could not save. Error: ' + (e.message || JSON.stringify(e)));
+    }
+  };
+  const removeAdj = async id => {
+    if (confirm('Remove this adjustment?')) {
+      await db.deleteStarAdjustment(id);
+      const adjs = await db.getStarAdjustments(histChild.id);
+      setAdjustments(adjs);
+      onRefresh();
+    }
+  };
+
+  // ── History drawer ─────────────────────────────────────────────────────────
+  if (histChild) {
+    return /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("button", {
+      style: {
+        background: 'none',
+        border: 'none',
+        fontFamily: 'Nunito',
+        fontWeight: 700,
+        fontSize: 15,
+        color: '#6366f1',
+        cursor: 'pointer',
+        marginBottom: 16
+      },
+      onClick: () => setHistChild(null)
+    }, "← Back"), /*#__PURE__*/React.createElement("div", {
+      className: "card",
+      style: {
+        display: 'flex',
+        alignItems: 'center',
+        gap: 12,
+        marginBottom: 16
+      }
+    }, /*#__PURE__*/React.createElement("div", {
+      style: {
+        fontSize: 36
+      }
+    }, histChild.emoji), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
+      style: {
+        fontWeight: 800,
+        fontSize: 16,
+        color: '#1f2937'
+      }
+    }, histChild.name), /*#__PURE__*/React.createElement("div", {
+      style: {
+        fontWeight: 700,
+        fontSize: 14,
+        color: '#6366f1'
+      }
+    }, "⭐ ", starTotals[histChild.id] ?? 0, " stars"))), /*#__PURE__*/React.createElement("div", {
+      className: "section-title"
+    }, "📋 Adjustment History"), adjustments.length === 0 && /*#__PURE__*/React.createElement("div", {
+      className: "empty-text"
+    }, "No adjustments yet."), adjustments.map(adj => /*#__PURE__*/React.createElement("div", {
+      key: adj.id,
+      className: "adj-row",
+      style: {
+        borderLeftColor: adj.amount < 0 ? '#ef4444' : '#10b981'
+      }
+    }, /*#__PURE__*/React.createElement("div", {
+      style: {
+        flex: 1
+      }
+    }, /*#__PURE__*/React.createElement("div", {
+      style: {
+        fontWeight: 800,
+        fontSize: 16,
+        color: adj.amount < 0 ? '#ef4444' : '#10b981'
+      }
+    }, adj.amount > 0 ? '+' : '', adj.amount, " ⭐"), /*#__PURE__*/React.createElement("div", {
+      style: {
+        fontWeight: 700,
+        fontSize: 13,
+        color: '#6b7280',
+        marginTop: 2
+      }
+    }, adj.reason), /*#__PURE__*/React.createElement("div", {
+      style: {
+        fontWeight: 400,
+        fontSize: 12,
+        color: '#9ca3af',
+        marginTop: 2
+      }
+    }, new Date(adj.created_at).toLocaleDateString())), /*#__PURE__*/React.createElement("button", {
+      className: "remove-btn",
+      onClick: () => removeAdj(adj.id)
+    }, "✕"))));
+  }
+
+  // ── Modal overlay ──────────────────────────────────────────────────────────
+  const modalEl = modal && (() => {
+    const {
+      child,
+      mode,
+      reward
+    } = modal;
+    const isSpend = mode === 'spend';
+    const presets = mode === 'bonus' ? BONUS_REASONS : DEDUCTION_REASONS;
+    const accentColor = mode === 'bonus' ? '#10b981' : '#ef4444';
+    return /*#__PURE__*/React.createElement("div", {
+      style: {
+        position: 'fixed',
+        inset: 0,
+        background: 'rgba(0,0,0,0.5)',
+        zIndex: 1000,
+        display: 'flex',
+        alignItems: 'flex-end',
+        justifyContent: 'center'
+      },
+      onClick: closeModal
+    }, /*#__PURE__*/React.createElement("div", {
+      style: {
+        background: '#fff',
+        borderRadius: '20px 20px 0 0',
+        padding: 24,
+        width: '100%',
+        maxWidth: 480,
+        maxHeight: '85vh',
+        overflowY: 'auto'
+      },
+      onClick: e => e.stopPropagation()
+    }, /*#__PURE__*/React.createElement("div", {
+      style: {
+        display: 'flex',
+        alignItems: 'center',
+        gap: 12,
+        marginBottom: 20
+      }
+    }, /*#__PURE__*/React.createElement("div", {
+      style: {
+        fontSize: 32
+      }
+    }, child.emoji), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
+      style: {
+        fontWeight: 800,
+        fontSize: 16,
+        color: '#1f2937'
+      }
+    }, child.name), /*#__PURE__*/React.createElement("div", {
+      style: {
+        fontWeight: 700,
+        fontSize: 13,
+        color: '#6366f1'
+      }
+    }, "⭐ ", starTotals[child.id] ?? 0, " stars")), /*#__PURE__*/React.createElement("button", {
+      onClick: closeModal,
+      style: {
+        marginLeft: 'auto',
+        background: 'none',
+        border: 'none',
+        fontSize: 20,
+        cursor: 'pointer',
+        color: '#9ca3af'
+      }
+    }, "✕")), isSpend ? /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("div", {
+      style: {
+        textAlign: 'center',
+        marginBottom: 20
+      }
+    }, /*#__PURE__*/React.createElement("div", {
+      style: {
+        fontSize: 48,
+        marginBottom: 8
+      }
+    }, reward.emoji), /*#__PURE__*/React.createElement("div", {
+      style: {
+        fontWeight: 800,
+        fontSize: 18,
+        color: '#1f2937',
+        marginBottom: 4
+      }
+    }, reward.name), /*#__PURE__*/React.createElement("div", {
+      style: {
+        fontWeight: 700,
+        fontSize: 15,
+        color: '#6366f1'
+      }
+    }, "Costs ⭐ ", reward.cost)), /*#__PURE__*/React.createElement("button", {
+      className: "btn",
+      style: {
+        background: '#6366f1',
+        color: '#fff'
+      },
+      onClick: spendReward,
+      disabled: saving
+    }, saving ? 'Saving...' : `Spend ${reward.cost} ⭐`)) : /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("div", {
+      className: "section-title",
+      style: {
+        color: accentColor
+      }
+    }, mode === 'bonus' ? '⬆ Give Bonus Stars' : '⬇ Deduct Stars'), /*#__PURE__*/React.createElement("label", {
+      className: "label"
+    }, "Quick Reasons"), /*#__PURE__*/React.createElement("div", {
+      style: {
+        display: 'flex',
+        flexWrap: 'wrap',
+        gap: 4,
+        marginBottom: 12
+      }
+    }, presets.map(r => /*#__PURE__*/React.createElement("button", {
+      key: r,
+      className: `chip${reason === r ? ' active' : ''}`,
+      onClick: () => setReason(reason === r ? '' : r)
+    }, r))), /*#__PURE__*/React.createElement("label", {
+      className: "label"
+    }, "Or type a reason"), /*#__PURE__*/React.createElement("input", {
+      className: "input",
+      value: reason,
+      onChange: e => setReason(e.target.value),
+      placeholder: mode === 'bonus' ? 'e.g. Helped without being asked' : 'e.g. Left room messy',
+      style: {
+        marginBottom: 12
+      }
+    }), /*#__PURE__*/React.createElement("label", {
+      className: "label"
+    }, "How many stars?"), /*#__PURE__*/React.createElement("div", {
+      className: "stars-row"
+    }, [1, 2, 3, 5, 10].map(n => /*#__PURE__*/React.createElement("button", {
+      key: n,
+      className: `star-btn${amount === String(n) ? ' active' : ''}`,
+      onClick: () => setAmount(String(n))
+    }, n))), /*#__PURE__*/React.createElement("input", {
+      className: "input",
+      value: amount,
+      onChange: e => setAmount(e.target.value),
+      placeholder: "Or enter custom amount",
+      type: "number",
+      style: {
+        marginTop: 8,
+        marginBottom: 16
+      }
+    }), /*#__PURE__*/React.createElement("button", {
+      className: "btn",
+      style: {
+        background: accentColor,
+        color: '#fff'
+      },
+      onClick: save,
+      disabled: saving || !amount.trim()
+    }, saving ? 'Saving...' : mode === 'bonus' ? `＋${amount || '?'} Stars to ${child.name}` : `－${amount || '?'} Stars from ${child.name}`))));
+  })();
+
+  // ── Main view ──────────────────────────────────────────────────────────────
+  return /*#__PURE__*/React.createElement("div", null, modalEl, /*#__PURE__*/React.createElement("div", {
+    className: "section-title"
+  }, "🎁 Spend Rewards"), /*#__PURE__*/React.createElement("div", {
+    style: {
+      marginBottom: 20
+    }
+  }, STAR_REWARDS.map(r => /*#__PURE__*/React.createElement("div", {
+    key: r.name,
+    className: "card",
+    style: {
+      marginBottom: 10
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: 'flex',
+      alignItems: 'center',
+      gap: 12,
+      marginBottom: 10
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: 32
+    }
+  }, r.emoji), /*#__PURE__*/React.createElement("div", {
+    style: {
+      flex: 1
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontWeight: 800,
+      fontSize: 15,
+      color: '#1f2937'
+    }
+  }, r.name), /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontWeight: 700,
+      fontSize: 13,
+      color: '#6366f1'
+    }
+  }, "⭐ ", r.cost, " stars"))), /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: 'flex',
+      gap: 6,
+      flexWrap: 'wrap'
+    }
+  }, sorted.map(child => {
+    const canAfford = (starTotals[child.id] ?? 0) >= r.cost;
+    return /*#__PURE__*/React.createElement("button", {
+      key: child.id,
+      onClick: () => openModal(child, 'spend', r),
+      style: {
+        background: canAfford ? '#6366f1' : '#e5e7eb',
+        color: canAfford ? '#fff' : '#9ca3af',
+        border: 'none',
+        borderRadius: 10,
+        padding: '6px 12px',
+        fontFamily: 'Nunito',
+        fontWeight: 700,
+        fontSize: 13,
+        cursor: canAfford ? 'pointer' : 'default'
+      }
+    }, child.emoji, " ", child.name);
+  }), sorted.length === 0 && /*#__PURE__*/React.createElement("span", {
+    style: {
+      color: '#9ca3af',
+      fontSize: 13
+    }
+  }, "No children yet"))))), /*#__PURE__*/React.createElement("div", {
+    className: "section-title"
+  }, "⭐ Star Totals"), sorted.map((child, i) => {
+    const stars = starTotals[child.id] ?? 0;
+    const color = CARD_COLORS[i % CARD_COLORS.length];
+    return /*#__PURE__*/React.createElement("div", {
+      key: child.id,
+      className: "card",
+      style: {
+        marginBottom: 10
+      }
+    }, /*#__PURE__*/React.createElement("div", {
+      style: {
+        display: 'flex',
+        alignItems: 'center',
+        gap: 10,
+        marginBottom: 10
+      }
+    }, /*#__PURE__*/React.createElement("div", {
+      style: {
+        fontSize: 30
+      }
+    }, child.emoji), /*#__PURE__*/React.createElement("div", {
+      style: {
+        flex: 1
+      }
+    }, /*#__PURE__*/React.createElement("div", {
+      style: {
+        display: 'flex',
+        justifyContent: 'space-between',
+        marginBottom: 5
+      }
+    }, /*#__PURE__*/React.createElement("div", {
+      style: {
+        fontWeight: 800,
+        fontSize: 15,
+        color: '#1f2937'
+      }
+    }, child.name), /*#__PURE__*/React.createElement("div", {
+      style: {
+        fontWeight: 800,
+        fontSize: 15,
+        color: '#6366f1'
+      }
+    }, "⭐ ", stars)), /*#__PURE__*/React.createElement("div", {
+      className: "star-bar"
+    }, /*#__PURE__*/React.createElement("div", {
+      className: "star-bar-fill",
+      style: {
+        width: `${Math.max(0, stars) / max * 100}%`,
+        background: color.bg
+      }
+    })))), /*#__PURE__*/React.createElement("div", {
+      style: {
+        display: 'flex',
+        gap: 8
+      }
+    }, /*#__PURE__*/React.createElement("button", {
+      onClick: () => openModal(child, 'bonus'),
+      style: {
+        flex: 1,
+        background: '#10b981',
+        color: '#fff',
+        border: 'none',
+        borderRadius: 10,
+        padding: '9px 0',
+        fontFamily: 'Nunito',
+        fontWeight: 800,
+        fontSize: 14,
+        cursor: 'pointer'
+      }
+    }, "＋ Give Stars"), /*#__PURE__*/React.createElement("button", {
+      onClick: () => openModal(child, 'deduct'),
+      style: {
+        flex: 1,
+        background: '#ef4444',
+        color: '#fff',
+        border: 'none',
+        borderRadius: 10,
+        padding: '9px 0',
+        fontFamily: 'Nunito',
+        fontWeight: 800,
+        fontSize: 14,
+        cursor: 'pointer'
+      }
+    }, "➖ Deduct Stars"), /*#__PURE__*/React.createElement("button", {
+      onClick: () => openHistory(child),
+      style: {
+        background: '#f3f4f6',
+        color: '#6b7280',
+        border: 'none',
+        borderRadius: 10,
+        padding: '9px 12px',
+        fontFamily: 'Nunito',
+        fontWeight: 700,
+        fontSize: 13,
+        cursor: 'pointer'
+      }
+    }, "📋")));
+  }), children.length === 0 && /*#__PURE__*/React.createElement("div", {
+    className: "empty-text"
+  }, "No children yet."));
+}
+
+// ─── Settings Tab ─────────────────────────────────────────────────────────────
+function SettingsTab({
+  appName,
+  adminPassword,
+  onRefresh
+}) {
+  const [name, setName] = useState(appName);
+  const [pwd, setPwd] = useState('');
+  const [saving, setSaving] = useState(false);
+  const save = async () => {
+    setSaving(true);
+    await db.setSetting('app_name', name.trim() || 'Family Chores ⭐');
+    if (pwd.trim()) await db.setSetting('admin_password', pwd.trim());
+    onRefresh();
+    alert('Settings saved!');
+    setSaving(false);
+  };
+  return /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
+    className: "section-title"
+  }, "App Settings"), /*#__PURE__*/React.createElement("div", {
+    className: "card"
+  }, /*#__PURE__*/React.createElement("label", {
+    className: "label"
+  }, "App Name"), /*#__PURE__*/React.createElement("input", {
+    className: "input",
+    value: name,
+    onChange: e => setName(e.target.value),
+    placeholder: "Family Chores ⭐"
+  }), /*#__PURE__*/React.createElement("label", {
+    className: "label"
+  }, "New Admin Password (leave blank to keep current)"), /*#__PURE__*/React.createElement("input", {
+    className: "input",
+    type: "password",
+    value: pwd,
+    onChange: e => setPwd(e.target.value),
+    placeholder: "New password..."
+  }), /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontWeight: 400,
+      fontSize: 13,
+      color: '#9ca3af',
+      marginTop: 8,
+      marginBottom: 16
+    }
+  }, "Current password: ", adminPassword), /*#__PURE__*/React.createElement("button", {
+    className: "btn btn-primary",
+    onClick: save,
+    disabled: saving
+  }, saving ? 'Saving...' : 'Save Settings')));
+}
+ReactDOM.createRoot(document.getElementById('root')).render(/*#__PURE__*/React.createElement(App, null));
+</script>
+</body>
+</html>
