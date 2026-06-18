@@ -87,6 +87,8 @@ html,body{height:100%;background:#f8f7ff;font-family:'Nunito',sans-serif;overflo
 /* Spinner */
 .spinner{display:flex;align-items:center;justify-content:center;height:100%;font-size:32px;animation:spin 1s linear infinite}
 @keyframes spin{to{transform:rotate(360deg)}}
+@keyframes motivPulse{0%,100%{transform:scale(1);opacity:1}50%{transform:scale(1.03);opacity:.92}}
+.motiv-banner{border-radius:16px;padding:12px 16px;margin:12px 16px 0;font-family:'Nunito',sans-serif;font-weight:800;font-size:14px;text-align:center;animation:motivPulse 2.5s ease-in-out infinite;line-height:1.4}
 
 /* Modal overlay */
 .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.5);display:flex;align-items:flex-end;z-index:100}
@@ -559,13 +561,15 @@ function HomeScreen({
   const [completions, setCompletions] = useState([]);
   const [appName, setAppName] = useState('Family Chores ⭐');
   const [loading, setLoading] = useState(true);
+  const [starTotals, setStarTotals] = useState({});
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const [kids, ch, comp, name] = await Promise.all([db.getChildren(), db.getChores(), db.getCompletions(getToday()), db.getSetting('app_name')]);
+      const [kids, ch, comp, name, totals] = await Promise.all([db.getChildren(), db.getChores(), db.getCompletions(getToday()), db.getSetting('app_name'), db.getStarTotals()]);
       setChildren(kids);
       setChores(ch);
       setCompletions(comp);
+      setStarTotals(totals);
       if (name) setAppName(name);
     } catch (e) {
       console.error('HomeScreen load error:', e);
@@ -576,12 +580,7 @@ function HomeScreen({
   useEffect(() => {
     if (active) load();
   }, [active]);
-  const starsToday = childId => {
-    return completions.filter(c => c.child_id === childId).reduce((sum, c) => {
-      const ch = chores.find(ch => ch.id === c.chore_id);
-      return sum + (ch?.stars_value ?? 1);
-    }, 0);
-  };
+  const starsToday = childId => starTotals[childId] ?? 0;
   const progress = childId => {
     const dayName = DAY_NAMES[new Date().getDay()];
     const assigned = chores.filter(ch => ch.assigned_to === childId && ch.days?.includes(dayName));
@@ -665,7 +664,7 @@ function HomeScreen({
       className: "child-card-age"
     }, "Age ", child.age), /*#__PURE__*/React.createElement("div", {
       className: "child-card-stars"
-    }, "⭐ ", stars, " today"), total > 0 && /*#__PURE__*/React.createElement("div", {
+    }, "⭐ ", stars, " total"), total > 0 && /*#__PURE__*/React.createElement("div", {
       className: "child-card-progress"
     }, done, "/", total, " done"));
   })), /*#__PURE__*/React.createElement("div", {
@@ -699,16 +698,16 @@ function ChildScreen({
   const [extraName, setExtraName] = useState('');
   const [extraStars, setExtraStars] = useState('1');
   const [submitting, setSubmitting] = useState(false);
-  const [adjTotal, setAdjTotal] = useState(0);
+  const [totalStars, setTotalStars] = useState(0);
   const load = useCallback(async () => {
     if (!childId) return;
     setLoading(true);
-    const [kids, ch, comp, sched, adjs] = await Promise.all([db.getChildren(), db.getChores(), db.getCompletions(getToday()), db.getWeeklySchedules(getWeekMonday()), db.getStarAdjustments(childId)]);
+    const [kids, ch, comp, sched, totals] = await Promise.all([db.getChildren(), db.getChores(), db.getCompletions(getToday()), db.getWeeklySchedules(getWeekMonday()), db.getStarTotals()]);
     setChild(kids.find(k => k.id === childId) ?? null);
     setChores(ch);
     setCompletions(comp);
     setSchedules(sched);
-    setAdjTotal(adjs.reduce((sum, a) => sum + a.amount, 0));
+    setTotalStars(totals[childId] ?? 0);
     setLoading(false);
   }, [childId]);
   useEffect(() => {
@@ -724,11 +723,19 @@ function ChildScreen({
   const isDone = choreId => completions.some(c => c.chore_id === choreId && c.child_id === childId);
   const doneCount = myChores.filter(ch => isDone(ch.id)).length;
   const allDone = myChores.length > 0 && doneCount === myChores.length;
-  const starsFromChores = completions.filter(c => c.child_id === childId).reduce((sum, c) => {
-    const ch = chores.find(ch => ch.id === c.chore_id);
-    return sum + (ch?.stars_value ?? 1);
-  }, 0);
-  const starsToday = starsFromChores + adjTotal;
+  const starsToday = totalStars;
+  const motivMessage = (() => {
+    const s = totalStars;
+    if (s >= 50) return { text: '🍦 You can get Ice Cream! Tell a parent!', bg: '#fce7f3', color: '#be185d' };
+    if (s >= 45) return { text: `🍦 Just ${50 - s} more stars for Ice Cream!`, bg: '#fce7f3', color: '#be185d' };
+    if (s >= 40) return { text: `🍦 ${50 - s} more stars and it's Ice Cream time!`, bg: '#fce7f3', color: '#be185d' };
+    if (s >= 15) return { text: '🎮 You can play Wii! Tell a parent!', bg: '#ede9fe', color: '#6d28d9' };
+    if (s >= 12) return { text: `🎮 Just ${15 - s} more stars to play Wii!`, bg: '#ede9fe', color: '#6d28d9' };
+    if (s >= 8)  return { text: `🎮 ${15 - s} more stars to unlock Wii time!`, bg: '#ede9fe', color: '#6d28d9' };
+    if (s >= 5)  return { text: '⭐ Great start! Keep doing chores!', bg: '#fef9c3', color: '#a16207' };
+    if (s > 0)   return { text: '⭐ Nice! Every star counts — keep going!', bg: '#fef9c3', color: '#a16207' };
+    return { text: '✨ Do your chores to earn stars and unlock rewards!', bg: '#f0fdf4', color: '#15803d' };
+  })();
   const childIndex = child ? parseInt(child.id.slice(-1), 16) : 0;
   const cardColor = CARD_COLORS[childIndex % CARD_COLORS.length];
   const toggle = async chore => {
@@ -797,7 +804,10 @@ function ChildScreen({
       color: 'rgba(255,255,255,.9)',
       marginTop: 4
     }
-  }, "⭐ ", starsToday, " stars today"))), /*#__PURE__*/React.createElement("div", {
+  }, "⭐ ", starsToday, " stars total"))), /*#__PURE__*/React.createElement("div", {
+    className: "motiv-banner",
+    style: { background: motivMessage.bg, color: motivMessage.color }
+  }, motivMessage.text), /*#__PURE__*/React.createElement("div", {
     className: "scroll-body",
     style: {
       background: '#f8f7ff'
