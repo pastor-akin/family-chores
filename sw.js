@@ -1,6 +1,6 @@
-const CACHE = 'family-chores-v4';
+const CACHE = 'family-chores-v5';
 
-const LOCAL_ASSETS = ['/', '/index.html', '/manifest.json', '/icon.png'];
+const LOCAL_ASSETS = ['/family-chores/', '/family-chores/index.html', '/family-chores/manifest.json', '/family-chores/icon.png'];
 
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(LOCAL_ASSETS)));
@@ -35,7 +35,7 @@ self.addEventListener('fetch', e => {
       return fetch(e.request).then(r => {
         if (r.ok) caches.open(CACHE).then(c => c.put(e.request, r.clone()));
         return r;
-      }).catch(() => caches.match('/index.html'));
+      }).catch(() => caches.match('/family-chores/index.html'));
     })
   );
 });

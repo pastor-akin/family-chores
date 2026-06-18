@@ -1,7 +1,8 @@
 {
   "name": "Family Chores",
   "short_name": "Chores",
-  "start_url": "/",
+  "start_url": "/family-chores/",
+  "scope": "/family-chores/",
   "display": "standalone",
   "background_color": "#6366f1",
   "theme_color": "#6366f1",
