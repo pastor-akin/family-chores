@@ -224,7 +224,11 @@ const db = {
   addChild: async c => (await sb.from('children').insert(c).select().single()).data,
   deleteChild: async id => sb.from('children').delete().eq('id', id),
   getChores: async () => (await sb.from('chores').select('*').order('sort_order').order('created_at')).data ?? [],
-  addChore: async c => (await sb.from('chores').insert(c).select().single()).data,
+  addChore: async c => {
+    const {data, error} = await sb.from('chores').insert(c).select().single();
+    if (error) { console.error('addChore error:', error); throw error; }
+    return data;
+  },
   deleteChore: async id => sb.from('chores').delete().eq('id', id),
   getCompletions: async date => (await sb.from('completions').select('*').eq('completed_date', date)).data ?? [],
   markComplete: async (choreId, childId, date) => sb.from('completions').upsert({
@@ -1295,20 +1299,24 @@ function ChoresTab({
   const save = async () => {
     if (!name.trim()) return;
     setSaving(true);
-    await db.addChore({
-      name: name.trim(),
-      emoji,
-      stars_value: parseInt(stars) || 1,
-      days: DAYS,
-      assigned_to: assignedTo,
-      description: desc.trim(),
-      sort_order: chores.length
-    });
-    setName('');
-    setDesc('');
-    setStars('1');
-    setAssignedTo(null);
-    onRefresh();
+    try {
+      await db.addChore({
+        name: name.trim(),
+        emoji,
+        stars_value: parseInt(stars) || 1,
+        days: DAYS,
+        assigned_to: assignedTo,
+        description: desc.trim(),
+        sort_order: chores.length
+      });
+      setName('');
+      setDesc('');
+      setStars('1');
+      setAssignedTo(null);
+      onRefresh();
+    } catch(e) {
+      alert('Could not save chore: ' + (e.message || JSON.stringify(e)));
+    }
     setSaving(false);
   };
   const addMeal = async (meal, childId) => {
