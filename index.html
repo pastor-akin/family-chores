@@ -232,12 +232,10 @@ const db = {
   },
   deleteChore: async id => sb.from('chores').delete().eq('id', id),
   getCompletions: async date => (await sb.from('completions').select('*').eq('completed_date', date)).data ?? [],
-  markComplete: async (choreId, childId, date) => sb.from('completions').upsert({
+  markComplete: async (choreId, childId, date) => sb.from('completions').insert({
     chore_id: choreId,
     child_id: childId,
     completed_date: date
-  }, {
-    onConflict: 'chore_id,completed_date'
   }),
   unmarkComplete: async (choreId, childId, date) => sb.from('completions').delete().eq('chore_id', choreId).eq('child_id', childId).eq('completed_date', date),
   getExtraRequests: async () => (await sb.from('extra_requests').select('*').order('created_at', {
@@ -795,7 +793,7 @@ function ChildScreen({
   const isDone = choreId => completions.some(c => c.chore_id === choreId && c.child_id === childId);
   const doneCount = myChores.filter(ch => isDone(ch.id)).length;
   const allDone = myChores.length > 0 && doneCount === myChores.length;
-  const starsToday = totalStars;
+  const starsToday = myChores.filter(ch => isDone(ch.id)).reduce((sum, ch) => sum + (ch.stars_value ?? 1), 0);
   const motivMessage = (() => {
     const s = totalStars;
     if (s >= 50) return { text: '🍦 You can get Ice Cream! Tell a parent!', bg: '#fce7f3', color: '#be185d' };
@@ -879,7 +877,7 @@ function ChildScreen({
       color: 'rgba(255,255,255,.9)',
       marginTop: 4
     }
-  }, "⭐ ", starsToday, " stars total"))), /*#__PURE__*/React.createElement("div", {
+  }, "⭐ ", starsToday, " stars today"))), /*#__PURE__*/React.createElement("div", {
     className: "motiv-banner",
     style: { background: motivMessage.bg, color: motivMessage.color }
   }, motivMessage.text), /*#__PURE__*/React.createElement("div", {
