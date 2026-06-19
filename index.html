@@ -371,6 +371,21 @@ const STAR_REWARDS = [{
 const BONUS_REASONS = ['Went to bed on time', 'Great attitude', 'Helped without being asked', 'Did homework without reminding', 'Being kind to siblings'];
 const DEDUCTION_REASONS = ['Not paying attention', 'Not going to bed', 'Bad attitude', 'Fighting with siblings', 'Not following instructions'];
 const CHORE_LIBRARY = [{
+  name: 'Pick up toys',
+  emoji: '🧸',
+  starsValue: 1,
+  minAge: 3
+}, {
+  name: 'Clean up after meals',
+  emoji: '🍽️',
+  starsValue: 1,
+  minAge: 3
+}, {
+  name: 'Dishes',
+  emoji: '🫧',
+  starsValue: 2,
+  minAge: 3
+}, {
   name: 'Put toys away',
   emoji: '🧸',
   starsValue: 1,
@@ -592,7 +607,7 @@ function HomeScreen({
   const starsToday = childId => starTotals[childId] ?? 0;
   const progress = childId => {
     const dayName = DAY_NAMES[new Date().getDay()];
-    const assigned = chores.filter(ch => ch.assigned_to === childId && ch.days?.includes(dayName));
+    const assigned = chores.filter(ch => (ch.assigned_to === childId || ch.assigned_to === 'all') && ch.days?.includes(dayName));
     const done = assigned.filter(ch => completions.some(c => c.chore_id === ch.id && c.child_id === childId));
     return {
       done: done.length,
@@ -727,7 +742,7 @@ function ChildScreen({
   const weekMonday = getWeekMonday();
   const myChores = chores.filter(ch => {
     const assigned = getEffectiveAssignment(ch, weekMonday, schedules);
-    return assigned === childId && ch.days?.includes(dayName);
+    return (assigned === childId || assigned === 'all') && ch.days?.includes(dayName);
   });
   const isDone = choreId => completions.some(c => c.chore_id === choreId && c.child_id === childId);
   const doneCount = myChores.filter(ch => isDone(ch.id)).length;
@@ -1353,6 +1368,7 @@ function ChoresTab({
     /*#__PURE__*/React.createElement("label", {className:"label"}, "Assign to"),
     /*#__PURE__*/React.createElement("div", {style:{display:'flex',gap:8,flexWrap:'wrap',margin:'8px 0 12px'}},
       /*#__PURE__*/React.createElement("button", {className:`pill${!assignedTo?' active':''}`, onClick:()=>setAssignedTo(null)}, "Anyone"),
+      /*#__PURE__*/React.createElement("button", {className:`pill${assignedTo==='all'?' active':''}`, onClick:()=>setAssignedTo('all')}, "👨‍👩‍👧‍👦 All Children"),
       children.map(c=>/*#__PURE__*/React.createElement("button", {key:c.id, className:`pill${assignedTo===c.id?' active':''}`, onClick:()=>setAssignedTo(c.id)}, c.emoji, " ", c.name))),
     /*#__PURE__*/React.createElement("label", {className:"label"}, "Emoji"),
     /*#__PURE__*/React.createElement("div", {style:{display:'flex',flexWrap:'wrap',gap:8,margin:'8px 0 16px'}},
@@ -1370,7 +1386,7 @@ function ChoresTab({
       /*#__PURE__*/React.createElement("div", {className:"list-emoji"}, ch.emoji),
       /*#__PURE__*/React.createElement("div", {style:{flex:1}},
         /*#__PURE__*/React.createElement("div", {className:"list-name"}, ch.name),
-        /*#__PURE__*/React.createElement("div", {className:"list-sub"}, "⭐", ch.stars_value, " · ", assignee?assignee.name:'Unassigned')),
+        /*#__PURE__*/React.createElement("div", {className:"list-sub"}, "⭐", ch.stars_value, " · ", ch.assigned_to==='all'?'All Children':assignee?assignee.name:'Unassigned')),
       /*#__PURE__*/React.createElement("button", {className:"remove-btn", onClick:()=>remove(ch)}, "✕"));
   }));
 }
