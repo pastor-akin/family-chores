@@ -232,11 +232,10 @@ const db = {
   },
   deleteChore: async id => sb.from('chores').delete().eq('id', id),
   getCompletions: async date => (await sb.from('completions').select('*').eq('completed_date', date)).data ?? [],
-  markComplete: async (choreId, childId, date) => sb.from('completions').insert({
-    chore_id: choreId,
-    child_id: childId,
-    completed_date: date
-  }),
+  markComplete: async (choreId, childId, date) => {
+    const {error} = await sb.from('completions').insert({chore_id: choreId, child_id: childId, completed_date: date});
+    if (error) throw error;
+  },
   unmarkComplete: async (choreId, childId, date) => sb.from('completions').delete().eq('chore_id', choreId).eq('child_id', childId).eq('completed_date', date),
   getExtraRequests: async () => (await sb.from('extra_requests').select('*').order('created_at', {
     ascending: false
@@ -581,7 +580,8 @@ function App() {
   const [screen, setScreen] = useState('home');
   const [childId, setChildId] = useState(null);
   const [theme, setTheme] = useState(DEFAULT_THEME);
-  const go = (s, id = null) => { setChildId(id); setScreen(s); };
+  const [homeKey, setHomeKey] = useState(0);
+  const go = (s, id = null) => { setChildId(id); setScreen(s); if (s === 'home') setHomeKey(k => k + 1); };
   useEffect(() => {
     db.getSetting('app_theme').then(val => {
       if (val) { const t = THEMES.find(t => t.id === val); if (t) setTheme(t); }
@@ -596,6 +596,7 @@ function App() {
   }, /*#__PURE__*/React.createElement(Toast, null),
   /*#__PURE__*/React.createElement(HomeScreen, {
     active: screen === 'home',
+    refreshKey: homeKey,
     onChild: id => go('child', id),
     onAdmin: () => go('admin-login'),
     theme: theme
@@ -618,6 +619,7 @@ function App() {
 // ─── Home Screen ─────────────────────────────────────────────────────────────
 function HomeScreen({
   active,
+  refreshKey,
   onChild,
   onAdmin,
   theme = DEFAULT_THEME
@@ -645,7 +647,7 @@ function HomeScreen({
   }, []);
   useEffect(() => {
     if (active) load();
-  }, [active]);
+  }, [active, refreshKey]);
   const starsToday = childId => starTotals[childId] ?? 0;
   const progress = childId => {
     const dayName = DAY_NAMES[new Date().getDay()];
@@ -812,18 +814,26 @@ function ChildScreen({
     const done = isDone(chore.id);
     const starsVal = chore.stars_value ?? 1;
     if (done) {
-      await db.unmarkComplete(chore.id, childId, getToday());
-      setCompletions(prev => prev.filter(c => !(c.chore_id === chore.id && c.child_id === childId)));
-      setTotalStars(prev => Math.max(0, prev - starsVal));
+      try {
+        await db.unmarkComplete(chore.id, childId, getToday());
+        setCompletions(prev => prev.filter(c => !(c.chore_id === chore.id && c.child_id === childId)));
+        setTotalStars(prev => Math.max(0, prev - starsVal));
+      } catch(e) {
+        window.showToast?.('Could not save — try again', 'error');
+      }
     } else {
-      await db.markComplete(chore.id, childId, getToday());
-      setCompletions(prev => [...prev, {
-        id: Date.now() + '',
-        chore_id: chore.id,
-        child_id: childId,
-        completed_date: getToday()
-      }]);
+      // Optimistically update local state first
+      const newComp = {id: Date.now()+'', chore_id: chore.id, child_id: childId, completed_date: getToday()};
+      setCompletions(prev => [...prev, newComp]);
       setTotalStars(prev => prev + starsVal);
+      try {
+        await db.markComplete(chore.id, childId, getToday());
+      } catch(e) {
+        // Revert on failure
+        setCompletions(prev => prev.filter(c => c.id !== newComp.id));
+        setTotalStars(prev => Math.max(0, prev - starsVal));
+        window.showToast?.('Could not save — check your connection', 'error');
+      }
     }
   };
   const submitExtra = async () => {
