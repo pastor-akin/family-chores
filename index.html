@@ -239,7 +239,7 @@ const db = {
   }, {
     onConflict: 'chore_id,completed_date'
   }),
-  unmarkComplete: async (choreId, date) => sb.from('completions').delete().eq('chore_id', choreId).eq('completed_date', date),
+  unmarkComplete: async (choreId, childId, date) => sb.from('completions').delete().eq('chore_id', choreId).eq('child_id', childId).eq('completed_date', date),
   getExtraRequests: async () => (await sb.from('extra_requests').select('*').order('created_at', {
     ascending: false
   })).data ?? [],
@@ -812,9 +812,11 @@ function ChildScreen({
   const cardColor = CARD_COLORS[childIndex % CARD_COLORS.length];
   const toggle = async chore => {
     const done = isDone(chore.id);
+    const starsVal = chore.stars_value ?? 1;
     if (done) {
-      await db.unmarkComplete(chore.id, getToday());
+      await db.unmarkComplete(chore.id, childId, getToday());
       setCompletions(prev => prev.filter(c => !(c.chore_id === chore.id && c.child_id === childId)));
+      setTotalStars(prev => Math.max(0, prev - starsVal));
     } else {
       await db.markComplete(chore.id, childId, getToday());
       setCompletions(prev => [...prev, {
@@ -823,6 +825,7 @@ function ChildScreen({
         child_id: childId,
         completed_date: getToday()
       }]);
+      setTotalStars(prev => prev + starsVal);
     }
   };
   const submitExtra = async () => {
