@@ -359,6 +359,14 @@ const ROW_COLORS = [{
 const CHILD_EMOJIS = ['😊', '😎', '🤩', '😄', '🥳', '😁', '🤗', '🦁', '🐯', '🦊', '🐻', '🐼', '🦋', '⭐', '🌟', '🚀'];
 const CHORE_EMOJIS = ['✅', '⭐', '🧹', '🫧', '🍽️', '🛏️', '👕', '🗑️', '🐶', '🌱', '📚', '🍳', '🧽', '🧸', '👟', '🚗'];
 const DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+const THEMES = [
+  { id: 'purple', name: 'Purple Dream', emoji: '💜', gradient: 'linear-gradient(160deg,#667eea,#c084fc,#f472b6)', accent: '#6366f1' },
+  { id: 'ocean',  name: 'Ocean Breeze', emoji: '🌊', gradient: 'linear-gradient(160deg,#0ea5e9,#38bdf8,#06b6d4)',  accent: '#0ea5e9' },
+  { id: 'sunset', name: 'Sunset',       emoji: '🌅', gradient: 'linear-gradient(160deg,#f97316,#ef4444,#ec4899)',  accent: '#f97316' },
+  { id: 'forest', name: 'Forest',       emoji: '🌿', gradient: 'linear-gradient(160deg,#16a34a,#059669,#0d9488)',  accent: '#16a34a' },
+  { id: 'golden', name: 'Golden Hour',  emoji: '✨', gradient: 'linear-gradient(160deg,#f59e0b,#f97316,#fb923c)',  accent: '#f59e0b' },
+];
+const DEFAULT_THEME = THEMES[0];
 const STAR_REWARDS = [{
   name: 'Play Wii',
   emoji: '🎮',
@@ -550,16 +558,24 @@ const MEAL_CHORES = {
 function App() {
   const [screen, setScreen] = useState('home');
   const [childId, setChildId] = useState(null);
-  const go = (s, id = null) => {
-    setChildId(id);
-    setScreen(s);
+  const [theme, setTheme] = useState(DEFAULT_THEME);
+  const go = (s, id = null) => { setChildId(id); setScreen(s); };
+  useEffect(() => {
+    db.getSetting('app_theme').then(val => {
+      if (val) { const t = THEMES.find(t => t.id === val); if (t) setTheme(t); }
+    });
+  }, []);
+  const handleThemeChange = async t => {
+    setTheme(t);
+    await db.setSetting('app_theme', t.id);
   };
   return /*#__PURE__*/React.createElement("div", {
     id: "root"
   }, /*#__PURE__*/React.createElement(HomeScreen, {
     active: screen === 'home',
     onChild: id => go('child', id),
-    onAdmin: () => go('admin-login')
+    onAdmin: () => go('admin-login'),
+    theme: theme
   }), /*#__PURE__*/React.createElement(ChildScreen, {
     active: screen === 'child',
     childId: childId,
@@ -570,7 +586,9 @@ function App() {
     onSuccess: () => go('admin-panel')
   }), /*#__PURE__*/React.createElement(AdminPanel, {
     active: screen === 'admin-panel',
-    onBack: () => go('home')
+    onBack: () => go('home'),
+    theme: theme,
+    onThemeChange: handleThemeChange
   }));
 }
 
@@ -578,7 +596,8 @@ function App() {
 function HomeScreen({
   active,
   onChild,
-  onAdmin
+  onAdmin,
+  theme = DEFAULT_THEME
 }) {
   const [children, setChildren] = useState([]);
   const [chores, setChores] = useState([]);
@@ -621,7 +640,7 @@ function HomeScreen({
   return /*#__PURE__*/React.createElement("div", {
     className: "screen",
     style: {
-      background: 'linear-gradient(160deg,#667eea,#c084fc,#f472b6)'
+      background: theme.gradient
     }
   }, /*#__PURE__*/React.createElement("div", {
     className: "scroll-body",
@@ -1126,7 +1145,9 @@ function AdminLogin({
 const TABS = ['Kids', 'Chores', 'Schedule', 'Requests', 'Stars', 'Settings'];
 function AdminPanel({
   active,
-  onBack
+  onBack,
+  theme = DEFAULT_THEME,
+  onThemeChange
 }) {
   const [tab, setTab] = useState('Kids');
   const [children, setChildren] = useState([]);
@@ -1207,6 +1228,8 @@ function AdminPanel({
   }), tab === 'Settings' && /*#__PURE__*/React.createElement(SettingsTab, {
     appName: appName,
     adminPassword: adminPassword,
+    theme: theme,
+    onThemeChange: onThemeChange,
     onRefresh: load
   }))));
 }
@@ -2056,6 +2079,8 @@ function StarsTab({
 function SettingsTab({
   appName,
   adminPassword,
+  theme = DEFAULT_THEME,
+  onThemeChange,
   onRefresh
 }) {
   const [name, setName] = useState(appName);
@@ -2069,38 +2094,35 @@ function SettingsTab({
     alert('Settings saved!');
     setSaving(false);
   };
-  return /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
-    className: "section-title"
-  }, "App Settings"), /*#__PURE__*/React.createElement("div", {
-    className: "card"
-  }, /*#__PURE__*/React.createElement("label", {
-    className: "label"
-  }, "App Name"), /*#__PURE__*/React.createElement("input", {
-    className: "input",
-    value: name,
-    onChange: e => setName(e.target.value),
-    placeholder: "Family Chores ⭐"
-  }), /*#__PURE__*/React.createElement("label", {
-    className: "label"
-  }, "New Admin Password (leave blank to keep current)"), /*#__PURE__*/React.createElement("input", {
-    className: "input",
-    type: "password",
-    value: pwd,
-    onChange: e => setPwd(e.target.value),
-    placeholder: "New password..."
-  }), /*#__PURE__*/React.createElement("div", {
-    style: {
-      fontWeight: 400,
-      fontSize: 13,
-      color: '#9ca3af',
-      marginTop: 8,
-      marginBottom: 16
-    }
-  }, "Current password: ", adminPassword), /*#__PURE__*/React.createElement("button", {
-    className: "btn btn-primary",
-    onClick: save,
-    disabled: saving
-  }, saving ? 'Saving...' : 'Save Settings')));
+  return /*#__PURE__*/React.createElement("div", null,
+    /*#__PURE__*/React.createElement("div", {className:"section-title"}, "Theme"),
+    /*#__PURE__*/React.createElement("div", {className:"card"},
+      /*#__PURE__*/React.createElement("div", {style:{display:'flex',flexDirection:'column',gap:10}},
+        THEMES.map(t => /*#__PURE__*/React.createElement("button", {
+          key: t.id,
+          onClick: () => onThemeChange && onThemeChange(t),
+          style: {
+            display: 'flex', alignItems: 'center', gap: 14, padding: '14px 16px',
+            borderRadius: 14, border: `3px solid ${theme.id === t.id ? t.accent : 'transparent'}`,
+            background: t.gradient, cursor: 'pointer', boxShadow: theme.id === t.id ? `0 0 0 2px ${t.accent}44` : 'none'
+          }
+        },
+          /*#__PURE__*/React.createElement("span", {style:{fontSize:26}}, t.emoji),
+          /*#__PURE__*/React.createElement("span", {style:{fontWeight:700, color:'#fff', fontSize:16, textShadow:'0 1px 3px rgba(0,0,0,.3)'}}, t.name),
+          theme.id === t.id && /*#__PURE__*/React.createElement("span", {style:{marginLeft:'auto',color:'#fff',fontSize:20}}, "✓")
+        ))
+      )
+    ),
+    /*#__PURE__*/React.createElement("div", {className:"section-title"}, "App Settings"),
+    /*#__PURE__*/React.createElement("div", {className:"card"},
+      /*#__PURE__*/React.createElement("label", {className:"label"}, "App Name"),
+      /*#__PURE__*/React.createElement("input", {className:"input", value:name, onChange:e=>setName(e.target.value), placeholder:"Family Chores ⭐"}),
+      /*#__PURE__*/React.createElement("label", {className:"label"}, "New Admin Password (leave blank to keep current)"),
+      /*#__PURE__*/React.createElement("input", {className:"input", type:"password", value:pwd, onChange:e=>setPwd(e.target.value), placeholder:"New password..."}),
+      /*#__PURE__*/React.createElement("div", {style:{fontWeight:400,fontSize:13,color:'#9ca3af',marginTop:8,marginBottom:16}}, "Current password: ", adminPassword),
+      /*#__PURE__*/React.createElement("button", {className:"btn btn-primary", onClick:save, disabled:saving}, saving?'Saving...':'Save Settings')
+    )
+  );
 }
 ReactDOM.createRoot(document.getElementById('root')).render(/*#__PURE__*/React.createElement(App, null));
 </script>
